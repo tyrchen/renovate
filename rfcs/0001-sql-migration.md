@@ -159,17 +159,9 @@ pub trait Planner {
 
 When applying the migration, we will first check if the local schema is up to date with the remote schema. If not, we will print a warning and ask the user to run `renovate init` to update the local schema. Then we will apply the migration SQLs to the remote database.
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
-
 ## Drawbacks
 
-Why should we *not* do this?
+This is not a universal solution to all databases. It is only for Postgres. I don't have time or intention to support other databases.
 
 ## Rationale and alternatives
 
