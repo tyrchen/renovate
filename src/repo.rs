@@ -1,5 +1,5 @@
 use crate::{
-    parser::{Constraint, Function, Index, RawDatabaseSchema, Table, Trigger, View},
+    parser::{Constraint, Function, Index, Table, Trigger, View},
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
 };
@@ -49,45 +49,67 @@ impl SchemaLoader for RemoteRepo {
     }
 }
 
+macro_rules! map_insert_schema {
+    ($map:expr, $item:ident) => {
+        $map.entry($item.id.schema.clone())
+            .or_insert(Default::default())
+            .insert($item.id.name.clone(), $item);
+    };
+}
+
+macro_rules! map_insert_relation {
+    ($map:expr, $item:ident) => {
+        $map.entry($item.id.schema_id.clone())
+            .or_insert(Default::default())
+            .insert($item.id.name.clone(), $item);
+    };
+}
+
+macro_rules! map_insert {
+    ($map:expr, $item:ident) => {
+        $map.insert($item.id.clone(), $item);
+    };
+}
+
 #[async_trait]
 impl SchemaLoader for SqlRepo {
     async fn load(&self) -> Result<DatabaseSchema> {
         let result = pg_query::parse(&self.0)?;
         let nodes = result.protobuf.nodes();
-        let mut data = RawDatabaseSchema::default();
+        let mut data = DatabaseSchema::default();
 
         for (node, _, _) in nodes {
             match node {
                 NodeRef::CreateStmt(table) => {
-                    let table = Table::from(table);
-                    data.tables.insert(table.id.clone(), table);
+                    let item = Table::from(table);
+                    map_insert_schema!(data.tables, item);
                 }
                 NodeRef::ViewStmt(view) => {
-                    let view = View::from(view);
-                    data.views.insert(view.id.clone(), view);
+                    let item = View::from(view);
+                    map_insert_schema!(data.views, item);
                 }
                 NodeRef::CreateTableAsStmt(mview) => {
-                    let view = View::from(mview);
-                    data.views.insert(view.id.clone(), view);
+                    let item = View::from(mview);
+                    map_insert_schema!(data.views, item);
                 }
                 NodeRef::CreateFunctionStmt(func) => {
-                    let func = Function::from(func);
-                    data.functions.insert(func.id.clone(), func);
+                    let item = Function::from(func);
+                    map_insert_schema!(data.functions, item);
                 }
                 NodeRef::CreateTrigStmt(trig) => {
-                    let trigger = Trigger::from(trig);
-                    data.triggers.insert(trigger.id.clone(), trigger);
+                    let item = Trigger::from(trig);
+                    map_insert!(data.triggers, item);
                 }
                 NodeRef::AlterTableStmt(alter) => {
-                    if let Ok(constraint) = Constraint::try_from(alter) {
-                        data.constraints.insert(constraint.id.clone(), constraint);
+                    if let Ok(item) = Constraint::try_from(alter) {
+                        map_insert_relation!(data.constraints, item);
                     } else {
                         todo!("alter table");
                     }
                 }
                 NodeRef::IndexStmt(index) => {
-                    let index = Index::from(index);
-                    data.indexes.insert(index.id.clone(), index);
+                    let item = Index::from(index);
+                    map_insert_relation!(data.indexes, item);
                 }
                 NodeRef::GrantStmt(_grant) => {
                     todo!()
@@ -119,7 +141,7 @@ impl SchemaLoader for SqlRepo {
                 _ => return Err(anyhow!(format!("Unsupported top level node: {:?}", node))),
             }
         }
-        Ok(data.into())
+        Ok(data)
     }
 }
 
