@@ -37,3 +37,5 @@ jobs:
         run: cargo check --all
       - name: Lint rust sources
         run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+      - name: Run all tests
+        run: cargo nextest run --all-features
