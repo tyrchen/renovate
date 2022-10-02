@@ -35,19 +35,35 @@ macro_rules! write_single_file {
         let content = join_items!($source);
         if !content.is_empty() {
             let path = $config.path.join(format!("{}.sql", $name));
-            SchemaSaver::write(&path, content, $config.format).await?;
+            SchemaSaver::write(&path, &content, $config.format).await?;
         }
     }};
 }
 
 macro_rules! write_schema_file {
-    ($source:expr, $name:expr, $config:ident) => {{
+    ($source:expr, $name:literal, $config:ident) => {{
         for (schema, items) in $source {
             let path = $config.path.join(&schema);
             fs::create_dir_all(&path).await?;
             let content = join_items!(items);
-            let path = path.join(format!("{}.sql", $name));
-            SchemaSaver::write(&path, content, $config.format).await?;
+            let filename = path.join(format!("{}.sql", $name));
+            SchemaSaver::write(&filename, &content, $config.format).await?;
+        }
+    }};
+}
+
+macro_rules! write_schema_files {
+    ($source:expr, $name:literal, $config:ident) => {{
+        for (schema, items) in $source {
+            let path = $config.path.join(&schema);
+            fs::create_dir_all(&path).await?;
+            for (n, content) in items {
+                let p = path.join($name);
+                fs::create_dir_all(&p).await?;
+                let filename = p.join(format!("{}.sql", n));
+                let content = format!("{};\n", content);
+                SchemaSaver::write(&filename, &content, $config.format).await?;
+            }
         }
     }};
 }
@@ -126,11 +142,16 @@ impl SchemaSaver {
     pub async fn flat(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
         let content = self.to_string();
         let filename = config.path.join("all.sql");
-        SchemaSaver::write(filename, content, config.format).await?;
+        SchemaSaver::write(filename, &content, config.format).await?;
         Ok(())
     }
 
     pub async fn nested(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
+        write_schema_files!(&self.types, "types", config);
+        write_schema_files!(&self.tables, "tables", config);
+        write_schema_files!(&self.views, "views", config);
+        write_schema_files!(&self.functions, "functions", config);
+
         write_single_file!(&self.triggers, "triggers", config);
         write_single_file!(&self.privileges, "privileges", config);
 
@@ -145,21 +166,22 @@ impl SchemaSaver {
 
         write_single_file!(&self.triggers, "triggers", config);
         write_single_file!(&self.privileges, "privileges", config);
+
         Ok(())
     }
 
     async fn write(
         filename: impl AsRef<Path>,
-        content: String,
+        content: &str,
         format: Option<RenovateFormatConfig>,
     ) -> anyhow::Result<()> {
-        let content = if let Some(format) = format {
-            sqlformat::format(&content, &Default::default(), format.into())
+        if let Some(format) = format {
+            let content = sqlformat::format(content, &Default::default(), format.into());
+            fs::write(filename, content).await?;
         } else {
-            content
+            fs::write(filename, content).await?;
         };
 
-        fs::write(filename, content).await?;
         Ok(())
     }
 }

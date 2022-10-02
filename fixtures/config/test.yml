@@ -1,4 +1,4 @@
 ---
 output:
-  layout: normal
+  layout: nested
   path: /tmp/db
