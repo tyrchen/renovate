@@ -21,14 +21,9 @@ pub trait SchemaLoader {
 }
 
 #[async_trait]
-pub trait SqlSaver: SqlFormatter {
+pub trait SqlSaver {
     /// store data to sql files in the given directory
     async fn save(&self, config: &RenovateOutputConfig) -> Result<()>;
-}
-
-pub trait SqlFormatter {
-    /// format the sql to a pretty string
-    fn format(&self) -> String;
 }
 
 pub trait SqlDiffer {

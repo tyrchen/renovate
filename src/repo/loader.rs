@@ -2,7 +2,7 @@ use crate::{
     map_insert, map_insert_relation, map_insert_schema,
     parser::{Constraint, Function, Index, SchemaId, Table, Trigger, View},
     utils::ignore_file,
-    DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader, SqlFormatter,
+    DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
 };
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -178,11 +178,5 @@ impl SchemaLoader for SqlRepo {
             }
         }
         Ok(data)
-    }
-}
-
-impl SqlFormatter for DatabaseSchema {
-    fn format(&self) -> String {
-        todo!()
     }
 }
