@@ -1,7 +1,8 @@
 use crate::{
+    map_insert, map_insert_relation, map_insert_schema,
     parser::{Constraint, Function, Index, SchemaId, Table, Trigger, View},
     utils::ignore_file,
-    DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
+    DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader, SqlFormatter,
 };
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -51,28 +52,6 @@ impl SchemaLoader for RemoteRepo {
         let sql = String::from_utf8(output)?;
         SqlRepo(sql).load().await
     }
-}
-
-macro_rules! map_insert_schema {
-    ($map:expr, $item:ident) => {
-        $map.entry($item.id.schema.clone())
-            .or_insert(Default::default())
-            .insert($item.id.name.clone(), $item);
-    };
-}
-
-macro_rules! map_insert_relation {
-    ($map:expr, $item:ident) => {
-        $map.entry($item.id.schema_id.clone())
-            .or_insert(Default::default())
-            .insert($item.id.name.clone(), $item);
-    };
-}
-
-macro_rules! map_insert {
-    ($map:expr, $item:ident) => {
-        $map.insert($item.id.clone(), $item);
-    };
 }
 
 #[async_trait]
@@ -202,20 +181,8 @@ impl SchemaLoader for SqlRepo {
     }
 }
 
-impl LocalRepo {
-    pub fn new(path: impl Into<PathBuf>) -> Self {
-        Self { path: path.into() }
-    }
-}
-
-impl RemoteRepo {
-    pub fn new(url: impl Into<String>) -> Self {
-        Self { url: url.into() }
-    }
-}
-
-impl Default for LocalRepo {
-    fn default() -> Self {
-        Self::new(".")
+impl SqlFormatter for DatabaseSchema {
+    fn format(&self) -> String {
+        todo!()
     }
 }

@@ -1,6 +1,7 @@
+use std::path::Path;
+
 use anyhow::Result;
-use renovate::LocalRepo;
-use renovate::SchemaLoader;
+use renovate::{LocalRepo, SchemaLoader, SqlSaver};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -10,5 +11,9 @@ async fn main() -> Result<()> {
     let repo = LocalRepo::new(path);
     let schema = repo.load().await?;
     println!("{:#?}", schema);
+
+    schema
+        .save(Path::new("/tmp/db"), Default::default())
+        .await?;
     Ok(())
 }
