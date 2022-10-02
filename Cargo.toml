@@ -26,6 +26,7 @@ glob = "0.3.0"
 itertools = "0.10.5"
 pg_query = "0.7.0"
 serde = { version = "1.0.145", features = ["derive"] }
+serde_yaml = "0.9.13"
 sqlformat = "0.2.0"
 tokio = { version = "1.21.2", features = ["fs", "rt", "macros", "rt-multi-thread", "tracing"] }
 tracing = "0.1.36"

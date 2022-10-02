@@ -1,14 +1,15 @@
 use crate::{
-    parser::{Constraint, Function, Index, Table, Trigger, View},
+    parser::{Constraint, Function, Index, SchemaId, Table, Trigger, View},
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use glob::glob;
-use pg_query::NodeRef;
+use pg_query::{protobuf::AlterTableType, NodeEnum, NodeRef};
 use std::path::PathBuf;
 use tokio::fs;
+use tracing::info;
 
 /// intermediate representation for local and remote repo
 #[derive(Debug, Clone)]
@@ -18,15 +19,19 @@ struct SqlRepo(String);
 impl SchemaLoader for LocalRepo {
     async fn load(&self) -> Result<DatabaseSchema> {
         // load all the .sql files in subdirectories except the "_meta" directory
-        let files = glob("**/*.sql")?
+        let glob_path = self.path.join("**/*.sql");
+        let files = glob(glob_path.as_os_str().to_str().unwrap())?
             .filter_map(Result::ok)
             .filter(|p| ignore_file(p, "_"))
             .collect::<Vec<PathBuf>>();
 
+        println!("files: {:?}", files);
         // concatenate all the sql files into one string
         let mut sql = String::with_capacity(16 * 1024);
         for file in files {
-            let content = fs::read_to_string(file).await?;
+            let content = fs::read_to_string(file.as_path())
+                .await
+                .with_context(|| format!("Failed to read file: {:?}", file))?;
             sql.push_str(&content);
         }
 
@@ -74,14 +79,17 @@ macro_rules! map_insert {
 #[async_trait]
 impl SchemaLoader for SqlRepo {
     async fn load(&self) -> Result<DatabaseSchema> {
-        let result = pg_query::parse(&self.0)?;
+        let result = pg_query::parse(&self.0).with_context(|| "Failed to parse SQL statements")?;
         let nodes = result.protobuf.nodes();
         let mut data = DatabaseSchema::default();
 
         for (node, _, _) in nodes {
             match node {
                 NodeRef::CreateStmt(table) => {
-                    let item = Table::from(table);
+                    let item = Table::try_from(table).with_context(|| {
+                        let sql = NodeEnum::CreateStmt(table.clone()).deparse();
+                        format!("Failed to convert: {:?}", sql)
+                    })?;
                     map_insert_schema!(data.tables, item);
                 }
                 NodeRef::ViewStmt(view) => {
@@ -93,7 +101,10 @@ impl SchemaLoader for SqlRepo {
                     map_insert_schema!(data.views, item);
                 }
                 NodeRef::CreateFunctionStmt(func) => {
-                    let item = Function::from(func);
+                    let item = Function::try_from(func).with_context(|| {
+                        let sql = NodeEnum::CreateFunctionStmt(func.clone()).deparse();
+                        format!("Failed to convert: {:?}", sql)
+                    })?;
                     map_insert_schema!(data.functions, item);
                 }
                 NodeRef::CreateTrigStmt(trig) => {
@@ -101,10 +112,55 @@ impl SchemaLoader for SqlRepo {
                     map_insert!(data.triggers, item);
                 }
                 NodeRef::AlterTableStmt(alter) => {
-                    if let Ok(item) = Constraint::try_from(alter) {
-                        map_insert_relation!(data.constraints, item);
-                    } else {
-                        todo!("alter table");
+                    let range_var = alter
+                        .relation
+                        .as_ref()
+                        .ok_or_else(|| anyhow!("no relation"))?;
+
+                    let id = SchemaId::from(range_var);
+                    let cmd = alter
+                        .cmds
+                        .iter()
+                        .filter_map(|n| n.node.as_ref())
+                        .next()
+                        .ok_or_else(|| anyhow!("no commands"))?;
+                    match cmd {
+                        NodeEnum::AlterTableCmd(ref cmd) => {
+                            match AlterTableType::from_i32(cmd.as_ref().subtype) {
+                                Some(AlterTableType::AtAddConstraint) => {
+                                    let node = cmd
+                                        .def
+                                        .as_ref()
+                                        .ok_or_else(|| anyhow!("no def"))?
+                                        .node
+                                        .as_ref()
+                                        .ok_or_else(|| anyhow!("no node"))?;
+                                    match node {
+                                        NodeEnum::Constraint(constraint) => {
+                                            let item = Constraint::try_from((
+                                                id,
+                                                alter,
+                                                constraint.as_ref(),
+                                            ))
+                                            .with_context(|| {
+                                                let sql = NodeEnum::Constraint(constraint.clone())
+                                                    .deparse();
+                                                format!("Failed to convert: {:?}", sql)
+                                            })?;
+                                            map_insert_relation!(data.constraints, item);
+                                        }
+                                        _ => {
+                                            return Err(anyhow!("unknown constraint: {:?}", node));
+                                        }
+                                    }
+                                }
+                                Some(AlterTableType::AtAddIndex) => todo!(),
+                                Some(AlterTableType::AtAddColumn) => todo!(),
+                                Some(AlterTableType::AtAddIndexConstraint) => todo!(),
+                                _ => todo!(),
+                            }
+                        }
+                        _ => return Err(anyhow!("unknown command")),
                     }
                 }
                 NodeRef::IndexStmt(index) => {
@@ -121,7 +177,7 @@ impl SchemaLoader for SqlRepo {
                     todo!()
                 }
                 NodeRef::CreateSchemaStmt(_schema) => {
-                    todo!()
+                    info!("ignoring schema");
                 }
                 NodeRef::CreateSeqStmt(_seq) => {
                     todo!()
@@ -138,7 +194,9 @@ impl SchemaLoader for SqlRepo {
                 NodeRef::CreatePolicyStmt(_policy) => {
                     todo!()
                 }
-                _ => return Err(anyhow!(format!("Unsupported top level node: {:?}", node))),
+                _ => {
+                    info!("unhandled node: {:?}", node.deparse());
+                }
             }
         }
         Ok(data)
