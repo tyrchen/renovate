@@ -25,7 +25,6 @@ impl SchemaLoader for LocalRepo {
             .filter(|p| ignore_file(p, "_"))
             .collect::<Vec<PathBuf>>();
 
-        println!("files: {:?}", files);
         // concatenate all the sql files into one string
         let mut sql = String::with_capacity(16 * 1024);
         for file in files {

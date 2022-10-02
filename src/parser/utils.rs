@@ -35,6 +35,7 @@ pub fn get_type_name(data_type: &TypeName) -> String {
         .join(".")
 }
 
+#[allow(dead_code)]
 pub fn serialize_node<S>(node: &NodeEnum, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
@@ -42,6 +43,7 @@ where
     serializer.serialize_str(&node.deparse().unwrap())
 }
 
+#[allow(dead_code)]
 pub fn deserialize_node<'de, D>(deserializer: D) -> Result<NodeEnum, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -50,6 +52,7 @@ where
     Ok(pg_query::parse(&s).unwrap().protobuf.nodes()[0].0.to_enum())
 }
 
+#[allow(dead_code)]
 pub fn serialize_constr_type<S>(con_type: &ConstrType, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
@@ -57,6 +60,7 @@ where
     serializer.serialize_str(&format!("{:?}", con_type.clone()))
 }
 
+#[allow(dead_code)]
 pub fn deserialize_constr_type<'de, D>(deserializer: D) -> Result<ConstrType, D::Error>
 where
     D: serde::Deserializer<'de>,

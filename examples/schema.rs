@@ -9,6 +9,6 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|| "fixtures/db".to_string());
     let repo = LocalRepo::new(path);
     let schema = repo.load().await?;
-    println!("{}", serde_yaml::to_string(&schema)?);
+    println!("{:#?}", schema);
     Ok(())
 }

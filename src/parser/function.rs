@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use super::{utils::get_type_name, Function, SchemaId};
+use debug_ignore::DebugIgnore;
 use itertools::Itertools;
 use pg_query::{protobuf::CreateFunctionStmt, NodeEnum};
 
@@ -29,7 +30,7 @@ impl TryFrom<&CreateFunctionStmt> for Function {
             id,
             args,
             returns,
-            node,
+            node: DebugIgnore(node),
         })
     }
 }

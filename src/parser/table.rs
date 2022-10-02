@@ -5,6 +5,7 @@ use super::{
     Column, SchemaId, Table,
 };
 use anyhow::anyhow;
+use debug_ignore::DebugIgnore;
 use pg_query::{
     protobuf::{ColumnDef, CreateStmt},
     NodeEnum,
@@ -27,7 +28,11 @@ impl TryFrom<&CreateStmt> for Table {
             }
         }
         let node = NodeEnum::CreateStmt(stmt.clone());
-        Ok(Self { id, columns, node })
+        Ok(Self {
+            id,
+            columns,
+            node: DebugIgnore(node),
+        })
     }
 }
 
