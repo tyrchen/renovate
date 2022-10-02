@@ -1,5 +1,6 @@
 #[cfg(feature = "cli")]
 mod cli;
+mod config;
 mod macros;
 mod parser;
 mod repo;
@@ -7,8 +8,10 @@ mod utils;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use std::path::{Path, PathBuf};
+use config::RenovateOutputConfig;
+use std::path::PathBuf;
 
+pub use config::RenovateConfig;
 pub use parser::DatabaseSchema;
 
 #[async_trait]
@@ -17,21 +20,10 @@ pub trait SchemaLoader {
     async fn load(&self) -> Result<DatabaseSchema>;
 }
 
-#[derive(Debug, Default, Clone, Copy)]
-pub enum Layout {
-    /// Default layout. Each schema has its own directory, with each file for a type of objects.
-    #[default]
-    Normal,
-    /// All objects are in a single file.
-    Flat,
-    /// Each type has its own directory under the schema directory.
-    Nested,
-}
-
 #[async_trait]
 pub trait SqlSaver: SqlFormatter {
     /// store data to sql files in the given directory
-    async fn save(&self, path: &Path, layout: Layout) -> Result<()>;
+    async fn save(&self, config: &RenovateOutputConfig) -> Result<()>;
 }
 
 pub trait SqlFormatter {

@@ -1,0 +1,4 @@
+---
+output:
+  layout: normal
+  path: /tmp/db

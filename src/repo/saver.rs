@@ -1,4 +1,7 @@
-use crate::{DatabaseSchema, Layout, SqlSaver};
+use crate::{
+    config::{RenovateFormatConfig, RenovateOutputConfig},
+    DatabaseSchema, SqlSaver,
+};
 use async_trait::async_trait;
 use std::{collections::BTreeMap, path::Path};
 use tokio::fs;
@@ -7,12 +10,14 @@ macro_rules! join_items {
     ($source:expr, $dest:ident) => {{
         for (_k, v) in $source {
             $dest.push_str(&v);
+            $dest.push_str(";\n\n");
         }
     }};
     ($source:expr) => {{
         let mut dest = String::new();
         for (_k, v) in $source {
             dest.push_str(&v);
+            dest.push_str(";\n\n");
         }
         dest
     }};
@@ -26,27 +31,28 @@ macro_rules! join_nested_items {
 }
 
 macro_rules! write_single_file {
-    ($source:expr, $name:expr, $path:expr) => {{
+    ($source:expr, $name:literal, $config:ident) => {{
         let content = join_items!($source);
-        let path = $path.join(format!("{}.sql", $name));
-        fs::write(
-            path,
-            sqlformat::format(&content, &Default::default(), Default::default()),
-        )
-        .await?;
-    }};
-}
-
-macro_rules! write_schema_file {
-    ($source:expr, $name:expr, $path:expr) => {{
-        for (schema, items) in $source {
-            let path = $path.join(&schema);
-            fs::create_dir_all(&path).await?;
-            write_single_file!(items, $name, &path);
+        if !content.is_empty() {
+            let path = $config.path.join(format!("{}.sql", $name));
+            SchemaSaver::write(&path, content, $config.format).await?;
         }
     }};
 }
 
+macro_rules! write_schema_file {
+    ($source:expr, $name:expr, $config:ident) => {{
+        for (schema, items) in $source {
+            let path = $config.path.join(&schema);
+            fs::create_dir_all(&path).await?;
+            let content = join_items!(items);
+            let path = path.join(format!("{}.sql", $name));
+            SchemaSaver::write(&path, content, $config.format).await?;
+        }
+    }};
+}
+
+/// Temporary struct to hold the data for the generated SQLs
 struct SchemaSaver {
     pub types: BTreeMap<String, BTreeMap<String, String>>,
     pub tables: BTreeMap<String, BTreeMap<String, String>>,
@@ -82,12 +88,14 @@ macro_rules! collect_db_items {
 
 #[async_trait]
 impl SqlSaver for DatabaseSchema {
-    async fn save(&self, path: &Path, layout: Layout) -> anyhow::Result<()> {
+    async fn save(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
+        use crate::config::Layout;
         let saver = SchemaSaver::try_from(self)?;
-        match layout {
-            Layout::Normal => saver.normal(path).await,
-            Layout::Flat => saver.flat(path).await,
-            Layout::Nested => saver.nested(path).await,
+
+        match config.layout {
+            Layout::Normal => saver.normal(config).await,
+            Layout::Flat => saver.flat(config).await,
+            Layout::Nested => saver.nested(config).await,
         }
     }
 }
@@ -115,27 +123,43 @@ impl TryFrom<&DatabaseSchema> for SchemaSaver {
 }
 
 impl SchemaSaver {
-    pub async fn flat(&self, path: &Path) -> anyhow::Result<()> {
+    pub async fn flat(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
         let content = self.to_string();
-        fs::write(path, content).await?;
+        let filename = config.path.join("all.sql");
+        SchemaSaver::write(filename, content, config.format).await?;
         Ok(())
     }
 
-    pub async fn nested(&self, path: &Path) -> anyhow::Result<()> {
-        write_single_file!(&self.triggers, "triggers", path);
-        write_single_file!(&self.privileges, "privileges", path);
+    pub async fn nested(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
+        write_single_file!(&self.triggers, "triggers", config);
+        write_single_file!(&self.privileges, "privileges", config);
 
         Ok(())
     }
 
-    pub async fn normal(&self, path: &Path) -> anyhow::Result<()> {
-        write_schema_file!(&self.types, "types", path);
-        write_schema_file!(&self.tables, "tables", path);
-        write_schema_file!(&self.views, "views", path);
-        write_schema_file!(&self.functions, "functions", path);
+    pub async fn normal(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
+        write_schema_file!(&self.types, "types", config);
+        write_schema_file!(&self.tables, "tables", config);
+        write_schema_file!(&self.views, "views", config);
+        write_schema_file!(&self.functions, "functions", config);
 
-        write_single_file!(&self.triggers, "triggers", path);
-        write_single_file!(&self.privileges, "privileges", path);
+        write_single_file!(&self.triggers, "triggers", config);
+        write_single_file!(&self.privileges, "privileges", config);
+        Ok(())
+    }
+
+    async fn write(
+        filename: impl AsRef<Path>,
+        content: String,
+        format: Option<RenovateFormatConfig>,
+    ) -> anyhow::Result<()> {
+        let content = if let Some(format) = format {
+            sqlformat::format(&content, &Default::default(), format.into())
+        } else {
+            content
+        };
+
+        fs::write(filename, content).await?;
         Ok(())
     }
 }
