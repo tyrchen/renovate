@@ -27,7 +27,7 @@ impl FromStr for View {
         match node {
             NodeRef::ViewStmt(stmt) => Self::try_from(stmt),
             NodeRef::CreateTableAsStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not an view: {}", s),
+            _ => anyhow::bail!("not a view: {}", s),
         }
     }
 }

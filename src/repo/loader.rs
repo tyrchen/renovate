@@ -86,7 +86,7 @@ impl SchemaLoader for SqlRepo {
                     map_insert_schema!(data.functions, item);
                 }
                 NodeRef::CreateTrigStmt(trig) => {
-                    let item = Trigger::from(trig);
+                    let item = Trigger::try_from(trig)?;
                     map_insert!(data.triggers, item);
                 }
                 NodeRef::AlterTableStmt(alter) => {
