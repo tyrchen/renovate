@@ -1,6 +1,5 @@
-use crate::{DiffItem, MigrationPlanner, SqlDiff};
-
 use super::{Index, RelationId};
+use crate::{DiffItem, MigrationPlanner, SqlDiff};
 use anyhow::Context;
 use debug_ignore::DebugIgnore;
 use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
@@ -20,7 +19,7 @@ impl FromStr for Index {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s).with_context(|| format!("Failed to parse: {}", s))?;
+        let parsed = pg_query::parse(s).with_context(|| format!("Failed to parse index: {}", s))?;
         let node = parsed.protobuf.nodes()[0].0;
         match node {
             NodeRef::IndexStmt(stmt) => Self::try_from(stmt),
@@ -43,15 +42,25 @@ impl TryFrom<&IndexStmt> for Index {
 
 impl MigrationPlanner for SqlDiff<Index> {
     type Migration = String;
-    fn plan(&self) -> Vec<Self::Migration> {
-        let mut migrations = vec![];
+
+    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(old) = &self.old {
-            migrations.push(format!("DROP INDEX {};", old.id.name));
+            Ok(Some(format!("DROP INDEX {};", old.id.name)))
+        } else {
+            Ok(None)
         }
+    }
+
+    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(new) = &self.new {
-            migrations.push(format!("{};", new.node.deparse().unwrap()));
+            Ok(Some(format!("{};", new.node.deparse().unwrap())))
+        } else {
+            Ok(None)
         }
-        migrations
+    }
+
+    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
+        Ok(None)
     }
 }
 
@@ -94,7 +103,7 @@ mod tests {
         let old: Index = sql1.parse().unwrap();
         let new: Index = sql2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
-        let migrations = diff.plan();
+        let migrations = diff.plan().unwrap();
         assert_eq!(migrations[0], "DROP INDEX foo;");
         assert_eq!(migrations[1], "CREATE INDEX foo ON bar USING btree (ooo);");
     }

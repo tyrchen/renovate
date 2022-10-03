@@ -45,6 +45,7 @@ where
     pub diff: String,
 }
 
+/// Diffing two objects to get deltas
 pub trait SqlDiffer {
     type Delta: MigrationPlanner;
     /// find the schema change
@@ -54,12 +55,23 @@ pub trait SqlDiffer {
 pub trait MigrationPlanner {
     type Migration: ToString;
 
-    // fn drop(&self) -> Result<Self::Migration>;
-    // fn create(&self) -> Result<Self::Migration>;
-    // fn alter(&self) -> Result<Self::Migration>;
+    /// generate drop sql
+    fn drop(&self) -> Result<Option<Self::Migration>>;
+    /// generate create sql
+    fn create(&self) -> Result<Option<Self::Migration>>;
+    /// generate alter sql
+    fn alter(&self) -> Result<Option<Vec<Self::Migration>>>;
 
-    /// generate schema migration
-    fn plan(&self) -> Vec<Self::Migration>;
+    /// if alter return Some, use the result for migration directly; otherwise, use drop/create for migration
+    fn plan(&self) -> Result<Vec<Self::Migration>> {
+        if let Some(items) = self.alter()? {
+            return Ok(items);
+        }
+
+        let drop = self.drop()?;
+        let create = self.create()?;
+        Ok([drop, create].into_iter().flatten().collect())
+    }
 }
 
 #[async_trait]

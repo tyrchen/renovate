@@ -1,14 +1,13 @@
-use crate::{DiffItem, MigrationPlanner, SqlDiff};
-use anyhow::Context;
-use itertools::Itertools;
-use std::str::FromStr;
-
 use super::{
     utils::{get_node_str, get_type_name},
     Function, FunctionArg, SchemaId,
 };
+use crate::{DiffItem, MigrationPlanner, SqlDiff};
+use anyhow::Context;
 use debug_ignore::DebugIgnore;
+use itertools::Itertools;
 use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
+use std::str::FromStr;
 
 impl DiffItem for Function {
     fn id(&self) -> String {
@@ -24,11 +23,12 @@ impl FromStr for Function {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s).with_context(|| format!("Failed to parse: {}", s))?;
+        let parsed =
+            pg_query::parse(s).with_context(|| format!("Failed to parse function: {}", s))?;
         let node = parsed.protobuf.nodes()[0].0;
         match node {
             NodeRef::CreateFunctionStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not a function"),
+            _ => anyhow::bail!("not a function: {}", s),
         }
     }
 }
@@ -53,15 +53,25 @@ impl TryFrom<&CreateFunctionStmt> for Function {
 
 impl MigrationPlanner for SqlDiff<Function> {
     type Migration = String;
-    fn plan(&self) -> Vec<Self::Migration> {
-        let mut migrations = vec![];
+
+    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(old) = &self.old {
-            migrations.push(format!("DROP FUNCTION {};", old.id));
+            Ok(Some(format!("DROP FUNCTION {};", old.id)))
+        } else {
+            Ok(None)
         }
+    }
+
+    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(new) = &self.new {
-            migrations.push(format!("{};", new.node.deparse().unwrap()));
+            Ok(Some(format!("{};", new.node.deparse().unwrap())))
+        } else {
+            Ok(None)
         }
-        migrations
+    }
+
+    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
+        Ok(None)
     }
 }
 
@@ -146,7 +156,7 @@ mod tests {
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
-        let plan = diff.plan();
+        let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
         assert_eq!(plan[0], "DROP FUNCTION public.test(text);");
         assert_eq!(plan[1], f2);
@@ -159,7 +169,7 @@ mod tests {
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
-        let plan = diff.plan();
+        let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
         assert_eq!(plan[0], "DROP FUNCTION public.test(text);");
         assert_eq!(plan[1], f2);

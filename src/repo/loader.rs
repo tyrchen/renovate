@@ -75,7 +75,7 @@ impl SchemaLoader for SqlRepo {
                     map_insert_schema!(data.views, item);
                 }
                 NodeRef::CreateTableAsStmt(mview) => {
-                    let item = View::from(mview);
+                    let item = View::try_from(mview)?;
                     map_insert_schema!(data.views, item);
                 }
                 NodeRef::CreateFunctionStmt(func) => {
