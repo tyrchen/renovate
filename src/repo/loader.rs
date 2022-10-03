@@ -1,13 +1,16 @@
 use crate::{
     map_insert, map_insert_relation, map_insert_schema,
-    parser::{Constraint, Function, Index, SchemaId, Table, Trigger, View},
+    parser::{
+        AlterTable, AlterTableAction, Function, Table, TableConstraint, TableIndex, TableOwner,
+        TableRls, Trigger, View,
+    },
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
 };
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use glob::glob;
-use pg_query::{protobuf::AlterTableType, NodeEnum, NodeRef};
+use pg_query::{NodeEnum, NodeRef};
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::info;
@@ -90,60 +93,25 @@ impl SchemaLoader for SqlRepo {
                     map_insert!(data.triggers, item);
                 }
                 NodeRef::AlterTableStmt(alter) => {
-                    let range_var = alter
-                        .relation
-                        .as_ref()
-                        .ok_or_else(|| anyhow!("no relation"))?;
-
-                    let id = SchemaId::from(range_var);
-                    let cmd = alter
-                        .cmds
-                        .iter()
-                        .filter_map(|n| n.node.as_ref())
-                        .next()
-                        .ok_or_else(|| anyhow!("no commands"))?;
-                    match cmd {
-                        NodeEnum::AlterTableCmd(ref cmd) => {
-                            match AlterTableType::from_i32(cmd.as_ref().subtype) {
-                                Some(AlterTableType::AtAddConstraint) => {
-                                    let node = cmd
-                                        .def
-                                        .as_ref()
-                                        .ok_or_else(|| anyhow!("no def"))?
-                                        .node
-                                        .as_ref()
-                                        .ok_or_else(|| anyhow!("no node"))?;
-                                    match node {
-                                        NodeEnum::Constraint(constraint) => {
-                                            let item = Constraint::try_from((
-                                                id,
-                                                alter,
-                                                constraint.as_ref(),
-                                            ))
-                                            .with_context(|| {
-                                                let sql = NodeEnum::Constraint(constraint.clone())
-                                                    .deparse();
-                                                format!("Failed to convert: {:?}", sql)
-                                            })?;
-                                            map_insert_relation!(data.constraints, item);
-                                        }
-                                        _ => {
-                                            return Err(anyhow!("unknown constraint: {:?}", node));
-                                        }
-                                    }
-                                }
-                                Some(AlterTableType::AtAddIndex) => todo!(),
-                                Some(AlterTableType::AtAddColumn) => todo!(),
-                                Some(AlterTableType::AtAddIndexConstraint) => todo!(),
-                                _ => todo!(),
-                            }
+                    let alter_table = AlterTable::try_from(alter)?;
+                    match &alter_table.action {
+                        AlterTableAction::Constraint(_) => {
+                            let constraint = TableConstraint::try_from(alter_table)?;
+                            map_insert_relation!(data.table_constraints, constraint);
                         }
-                        _ => return Err(anyhow!("unknown command")),
+                        AlterTableAction::Rls => {
+                            let rls = TableRls::try_from(alter_table)?;
+                            data.table_rls.insert(rls.id.clone(), rls);
+                        }
+                        AlterTableAction::Owner(_) => {
+                            let owner = TableOwner::try_from(alter_table)?;
+                            data.table_owners.insert(owner.id.clone(), owner);
+                        }
                     }
                 }
                 NodeRef::IndexStmt(index) => {
-                    let item = Index::try_from(index)?;
-                    map_insert_relation!(data.indexes, item);
+                    let item = TableIndex::try_from(index)?;
+                    map_insert_relation!(data.table_indexes, item);
                 }
                 NodeRef::GrantStmt(_grant) => {
                     todo!()

@@ -1,15 +1,14 @@
-use std::collections::BTreeMap;
-
 use super::{
     utils::{get_type_name, node_to_embed_constraint},
-    Column, SchemaId, Table,
+    Column, ConstraintInfo, SchemaId, Table,
 };
 use anyhow::anyhow;
 use debug_ignore::DebugIgnore;
 use pg_query::{
-    protobuf::{ColumnDef, CreateStmt},
+    protobuf::{ColumnDef, ConstrType, Constraint as PgConstraint, CreateStmt},
     NodeEnum,
 };
+use std::collections::BTreeMap;
 
 impl TryFrom<&CreateStmt> for Table {
     type Error = anyhow::Error;
@@ -60,6 +59,20 @@ impl TryFrom<&ColumnDef> for Column {
             nullable,
             default,
             constraints,
+        })
+    }
+}
+
+impl TryFrom<&PgConstraint> for ConstraintInfo {
+    type Error = anyhow::Error;
+    fn try_from(constraint: &PgConstraint) -> Result<Self, Self::Error> {
+        let con_type = ConstrType::from_i32(constraint.contype).unwrap();
+        let node = NodeEnum::Constraint(Box::new(constraint.clone()));
+        let name = constraint.conname.clone();
+        Ok(Self {
+            name,
+            con_type,
+            node: DebugIgnore(node),
         })
     }
 }

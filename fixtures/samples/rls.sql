@@ -1,0 +1,1 @@
+ALTER TABLE audit.logged_actions ENABLE ROW LEVEL SECURITY;

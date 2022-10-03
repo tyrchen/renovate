@@ -1,3 +1,4 @@
+use pg_query::protobuf::RangeVar;
 use std::fmt;
 
 use crate::parser::SchemaId;
@@ -22,6 +23,21 @@ impl SchemaId {
                 name: names[0].to_string(),
             }
         }
+    }
+}
+
+impl From<Option<&RangeVar>> for SchemaId {
+    fn from(v: Option<&RangeVar>) -> Self {
+        assert!(v.is_some());
+        let v = v.unwrap();
+
+        let schema = if v.schemaname.is_empty() {
+            "public"
+        } else {
+            v.schemaname.as_str()
+        };
+
+        Self::new(schema, &v.relname)
     }
 }
 

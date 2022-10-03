@@ -1,4 +1,4 @@
-use super::{EmbedConstraint, SchemaId};
+use super::{ConstraintInfo, SchemaId};
 use anyhow::Result;
 use pg_query::{
     protobuf::{ConstrType, RangeVar, TypeName},
@@ -17,9 +17,9 @@ impl From<&RangeVar> for SchemaId {
     }
 }
 
-pub fn node_to_embed_constraint(node: &Node) -> Option<EmbedConstraint> {
+pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
     match &node.node {
-        Some(NodeEnum::Constraint(v)) => EmbedConstraint::try_from(v.as_ref()).ok(),
+        Some(NodeEnum::Constraint(v)) => ConstraintInfo::try_from(v.as_ref()).ok(),
         _ => None,
     }
 }

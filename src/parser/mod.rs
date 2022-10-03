@@ -1,8 +1,11 @@
-mod constraint;
+mod alter_table;
 mod function;
 mod index;
 mod privilege;
 mod table;
+mod table_constraint;
+mod table_owner;
+mod table_rls;
 mod trigger;
 mod utils;
 mod view;
@@ -26,18 +29,28 @@ pub struct RelationId {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct DatabaseSchema {
     pub extensions: BTreeMap<String, BTreeMap<String, Extension>>,
+
+    // schema level objects
     pub types: BTreeMap<String, BTreeMap<String, DataType>>,
     pub tables: BTreeMap<String, BTreeMap<String, Table>>,
-    pub sequences: BTreeMap<SchemaId, BTreeMap<String, Sequence>>,
     pub views: BTreeMap<String, BTreeMap<String, View>>,
     pub functions: BTreeMap<String, BTreeMap<String, Function>>,
-    pub indexes: BTreeMap<SchemaId, BTreeMap<String, Index>>,
-    pub constraints: BTreeMap<SchemaId, BTreeMap<String, Constraint>>,
+
+    // database level objects
     pub triggers: BTreeMap<String, Trigger>,
     pub privileges: BTreeMap<String, Privilege>,
-    pub policies: BTreeMap<String, BTreeMap<String, Vec<Policy>>>,
 
-    _sequences: BTreeMap<String, BTreeMap<String, Sequence>>,
+    // table level objects
+    pub table_indexes: BTreeMap<SchemaId, BTreeMap<String, TableIndex>>,
+    pub table_constraints: BTreeMap<SchemaId, BTreeMap<String, TableConstraint>>,
+    pub table_policies: BTreeMap<SchemaId, Vec<TablePolicy>>,
+    pub table_rls: BTreeMap<SchemaId, TableRls>,
+    pub table_owners: BTreeMap<SchemaId, TableOwner>,
+    pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
+
+    // internal data structures
+    _sequences: BTreeMap<String, Sequence>,
+    _table_sequences: BTreeMap<SchemaId, SequenceInfo>,
 }
 
 /// Postgres schema
@@ -104,7 +117,7 @@ pub struct Column {
     pub type_name: String,
     pub nullable: bool,
     pub default: Option<String>,
-    pub constraints: Vec<EmbedConstraint>,
+    pub constraints: Vec<ConstraintInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -114,15 +127,30 @@ pub struct Sequence {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct EmbedConstraint {
+pub struct TableSequence {
+    pub id: RelationId,
+    pub seq: Sequence,
+    pub info: SequenceInfo,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SequenceInfo {
+    pub id: RelationId,
+    pub column: String,
+    pub node: DebugIgnore<NodeEnum>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ConstraintInfo {
+    pub name: String,
     pub con_type: ConstrType,
     pub node: DebugIgnore<NodeEnum>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Constraint {
+pub struct TableConstraint {
     pub id: RelationId,
-    pub con_type: ConstrType,
+    pub info: ConstraintInfo,
     pub node: DebugIgnore<NodeEnum>,
 }
 
@@ -131,8 +159,9 @@ pub struct Privilege {
     pub node: DebugIgnore<NodeEnum>,
 }
 
+/// Index for table or material view
 #[derive(Debug, Clone, PartialEq)]
-pub struct Index {
+pub struct TableIndex {
     pub id: RelationId,
     pub node: DebugIgnore<NodeEnum>,
 }
@@ -144,7 +173,39 @@ pub struct Extension {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Policy {
+pub struct TablePolicy {
     pub id: SchemaId,
+    pub node: DebugIgnore<NodeEnum>,
+}
+
+/// Struct to capture all alter table statements
+#[derive(Debug, Clone, PartialEq)]
+pub struct AlterTable {
+    pub id: SchemaId,
+    // for sql from pg_dump, only one action is used
+    pub action: AlterTableAction,
+    pub node: DebugIgnore<NodeEnum>,
+}
+
+/// Supported alter table actions
+#[derive(Debug, Clone, PartialEq)]
+pub enum AlterTableAction {
+    Constraint(Box<ConstraintInfo>),
+    Rls,
+    Owner(String),
+}
+
+/// Struct to capture `ALTER TABLE ENABLE ROW LEVEL SECURITY;`
+#[derive(Debug, Clone, PartialEq)]
+pub struct TableRls {
+    pub id: SchemaId,
+    pub node: DebugIgnore<NodeEnum>,
+}
+
+/// Struct to capture `ALTER TABLE OWNER TO new_owner;`
+#[derive(Debug, Clone, PartialEq)]
+pub struct TableOwner {
+    pub id: SchemaId,
+    pub owner: String,
     pub node: DebugIgnore<NodeEnum>,
 }

@@ -1,11 +1,11 @@
-use super::{Index, RelationId};
+use super::{RelationId, TableIndex};
 use crate::{DiffItem, MigrationPlanner, SqlDiff};
 use anyhow::Context;
 use debug_ignore::DebugIgnore;
 use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
 
-impl DiffItem for Index {
+impl DiffItem for TableIndex {
     fn id(&self) -> String {
         self.id.name.clone()
     }
@@ -15,7 +15,7 @@ impl DiffItem for Index {
     }
 }
 
-impl FromStr for Index {
+impl FromStr for TableIndex {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> anyhow::Result<Self> {
@@ -28,7 +28,7 @@ impl FromStr for Index {
     }
 }
 
-impl TryFrom<&IndexStmt> for Index {
+impl TryFrom<&IndexStmt> for TableIndex {
     type Error = anyhow::Error;
     fn try_from(stmt: &IndexStmt) -> Result<Self, Self::Error> {
         let id = get_id(stmt);
@@ -40,7 +40,7 @@ impl TryFrom<&IndexStmt> for Index {
     }
 }
 
-impl MigrationPlanner for SqlDiff<Index> {
+impl MigrationPlanner for SqlDiff<TableIndex> {
     type Migration = String;
 
     fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn index_should_parse() {
         let sql = "CREATE INDEX foo ON bar (baz);";
-        let index: Index = sql.parse().unwrap();
+        let index: TableIndex = sql.parse().unwrap();
         assert_eq!(index.id.name, "foo");
         assert_eq!(index.id.schema_id.schema, "public");
         assert_eq!(index.id.schema_id.name, "bar");
@@ -90,8 +90,8 @@ mod tests {
     fn unchanged_index_should_return_none() {
         let sql1 = "CREATE INDEX foo ON bar (baz);";
         let sql2 = "CREATE INDEX foo ON bar (baz);";
-        let old: Index = sql1.parse().unwrap();
-        let new: Index = sql2.parse().unwrap();
+        let old: TableIndex = sql1.parse().unwrap();
+        let new: TableIndex = sql2.parse().unwrap();
         let diff = old.diff(&new).unwrap();
         assert!(diff.is_none());
     }
@@ -100,8 +100,8 @@ mod tests {
     fn changed_index_should_generate_migration() {
         let sql1 = "CREATE INDEX foo ON bar (baz);";
         let sql2 = "CREATE INDEX foo ON bar (ooo);";
-        let old: Index = sql1.parse().unwrap();
-        let new: Index = sql2.parse().unwrap();
+        let old: TableIndex = sql1.parse().unwrap();
+        let new: TableIndex = sql2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
         let migrations = diff.plan().unwrap();
         assert_eq!(migrations[0], "DROP INDEX foo;");
