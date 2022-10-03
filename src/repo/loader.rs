@@ -142,7 +142,7 @@ impl SchemaLoader for SqlRepo {
                     }
                 }
                 NodeRef::IndexStmt(index) => {
-                    let item = Index::from(index);
+                    let item = Index::try_from(index)?;
                     map_insert_relation!(data.indexes, item);
                 }
                 NodeRef::GrantStmt(_grant) => {

@@ -1,3 +1,5 @@
+use crate::config::RenovateFormatConfig;
+
 use super::{EmbedConstraint, SchemaId};
 use anyhow::Result;
 use console::{style, Style};
@@ -10,8 +12,13 @@ use similar::{ChangeTag, TextDiff};
 use std::fmt::{self, Write};
 
 impl From<&RangeVar> for SchemaId {
-    fn from(range_var: &RangeVar) -> Self {
-        Self::new(&range_var.schemaname, &range_var.relname)
+    fn from(v: &RangeVar) -> Self {
+        let schema_name = if v.schemaname.is_empty() {
+            "public"
+        } else {
+            v.schemaname.as_str()
+        };
+        Self::new(schema_name, &v.relname)
     }
 }
 
@@ -101,8 +108,17 @@ impl fmt::Display for Line {
     }
 }
 
+pub fn create_diff(old: &NodeEnum, new: &NodeEnum) -> Result<String> {
+    let format = RenovateFormatConfig::default().into();
+
+    let old = sqlformat::format(&old.deparse()?, &Default::default(), format);
+    let new = sqlformat::format(&new.deparse()?, &Default::default(), format);
+
+    diff_text(&old, &new)
+}
+
 /// generate the diff between two strings. TODO: this is just for console output for now
-pub fn diff_text(text1: &str, text2: &str) -> Result<String> {
+fn diff_text(text1: &str, text2: &str) -> Result<String> {
     let mut output = String::new();
     let diff = TextDiff::from_lines(text1, text2);
 

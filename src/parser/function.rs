@@ -4,7 +4,7 @@ use itertools::Itertools;
 use std::str::FromStr;
 
 use super::{
-    utils::{diff_text, get_node_str, get_type_name},
+    utils::{create_diff, get_node_str, get_type_name},
     Function, FunctionArg, SchemaId,
 };
 use debug_ignore::DebugIgnore;
@@ -57,9 +57,7 @@ impl SqlDiffer for Function {
         }
 
         if self != remote {
-            let old_str = self.node.deparse()?;
-            let new_str = remote.node.deparse()?;
-            let diff = diff_text(&old_str, &new_str)?;
+            let diff = create_diff(&self.node, &remote.node)?;
             Ok(Some(FunctionDiff {
                 id: self.id.clone(),
                 old: Some(self.clone()),
@@ -112,6 +110,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn valid_create_function_sql_should_parse() {
+        let f1 = "CREATE FUNCTION test(name text, value integer) RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$;";
+        let fun: Function = f1.parse().unwrap();
+        assert_eq!(
+            fun.id,
+            SchemaId::new("public", "test(text, pg_catalog.int4)")
+        );
+        assert_eq!(
+            fun.args,
+            vec![
+                FunctionArg {
+                    name: "name".to_string(),
+                    data_type: "text".to_string()
+                },
+                FunctionArg {
+                    name: "value".to_string(),
+                    data_type: "pg_catalog.int4".to_string()
+                },
+            ]
+        );
+        assert_eq!(fun.returns, "text");
+    }
+
+    #[test]
     fn unchanged_function_should_return_none() {
         let f1 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$;";
         let f2 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$;";
@@ -135,7 +157,7 @@ mod tests {
     }
 
     #[test]
-    fn function_change_arg_name_would_get_diff() {
+    fn function_change_arg_name_should_generate_migration() {
         let f1 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$;";
         let f2 = "CREATE FUNCTION test(name2 text) RETURNS text LANGUAGE sql STABLE AS $$ select name2 $$;";
         let old: Function = f1.parse().unwrap();
@@ -149,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    fn function_change_content_would_get_diff() {
+    fn function_change_content_should_generate_migration() {
         let f1 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$;";
         let f2 = "CREATE FUNCTION test(name2 text) RETURNS text LANGUAGE sql IMMUTABLE AS $$ select name2 $$;";
         let old: Function = f1.parse().unwrap();
