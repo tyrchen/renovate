@@ -1,14 +1,24 @@
-use crate::{MigrationPlanner, SqlDiffer};
+use crate::{DiffItem, MigrationPlanner, SqlDiff};
 use anyhow::Context;
 use itertools::Itertools;
 use std::str::FromStr;
 
 use super::{
-    utils::{create_diff, get_node_str, get_type_name},
+    utils::{get_node_str, get_type_name},
     Function, FunctionArg, SchemaId,
 };
 use debug_ignore::DebugIgnore;
 use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
+
+impl DiffItem for Function {
+    fn id(&self) -> String {
+        self.id.to_string()
+    }
+
+    fn node(&self) -> &NodeEnum {
+        &self.node
+    }
+}
 
 impl FromStr for Function {
     type Err = anyhow::Error;
@@ -41,36 +51,7 @@ impl TryFrom<&CreateFunctionStmt> for Function {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct FunctionDiff {
-    pub id: SchemaId,
-    pub old: Option<Function>,
-    pub new: Option<Function>,
-    pub diff: String,
-}
-
-impl SqlDiffer for Function {
-    type Delta = FunctionDiff;
-    fn diff(&self, remote: &Self) -> anyhow::Result<Option<Self::Delta>> {
-        if self.id != remote.id {
-            anyhow::bail!("can't diff {} and {}", self.id, remote.id);
-        }
-
-        if self != remote {
-            let diff = create_diff(&self.node, &remote.node)?;
-            Ok(Some(FunctionDiff {
-                id: self.id.clone(),
-                old: Some(self.clone()),
-                new: Some(remote.clone()),
-                diff,
-            }))
-        } else {
-            Ok(None)
-        }
-    }
-}
-
-impl MigrationPlanner for FunctionDiff {
+impl MigrationPlanner for SqlDiff<Function> {
     type Migration = String;
     fn plan(&self) -> Vec<Self::Migration> {
         let mut migrations = vec![];
@@ -107,6 +88,8 @@ fn parse_args(args: &[Node]) -> Vec<FunctionArg> {
 
 #[cfg(test)]
 mod tests {
+    use crate::SqlDiffer;
+
     use super::*;
 
     #[test]
@@ -163,7 +146,6 @@ mod tests {
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
-        assert_eq!(diff.id, SchemaId::new("public", "test(text)"));
         let plan = diff.plan();
         assert_eq!(plan.len(), 2);
         assert_eq!(plan[0], "DROP FUNCTION public.test(text);");
@@ -177,7 +159,6 @@ mod tests {
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
-        assert_eq!(diff.id, SchemaId::new("public", "test(text)"));
         let plan = diff.plan();
         assert_eq!(plan.len(), 2);
         assert_eq!(plan[0], "DROP FUNCTION public.test(text);");

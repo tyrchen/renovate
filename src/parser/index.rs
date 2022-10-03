@@ -1,10 +1,20 @@
-use crate::{MigrationPlanner, SqlDiffer};
+use crate::{DiffItem, MigrationPlanner, SqlDiff};
 
-use super::{utils::create_diff, Index, RelationId};
+use super::{Index, RelationId};
 use anyhow::Context;
 use debug_ignore::DebugIgnore;
-use pg_query::{protobuf::IndexStmt, NodeRef};
+use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
+
+impl DiffItem for Index {
+    fn id(&self) -> String {
+        self.id.name.clone()
+    }
+
+    fn node(&self) -> &NodeEnum {
+        &self.node
+    }
+}
 
 impl FromStr for Index {
     type Err = anyhow::Error;
@@ -31,36 +41,7 @@ impl TryFrom<&IndexStmt> for Index {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct IndexDiff {
-    pub id: RelationId,
-    pub old: Option<Index>,
-    pub new: Option<Index>,
-    pub diff: String,
-}
-
-impl SqlDiffer for Index {
-    type Delta = IndexDiff;
-    fn diff(&self, remote: &Self) -> anyhow::Result<Option<Self::Delta>> {
-        if self.id != remote.id {
-            anyhow::bail!("can't diff {} and {}", self.id.name, remote.id.name);
-        }
-
-        if self != remote {
-            let diff = create_diff(&self.node, &remote.node)?;
-            Ok(Some(IndexDiff {
-                id: self.id.clone(),
-                old: Some(self.clone()),
-                new: Some(remote.clone()),
-                diff,
-            }))
-        } else {
-            Ok(None)
-        }
-    }
-}
-
-impl MigrationPlanner for IndexDiff {
+impl MigrationPlanner for SqlDiff<Index> {
     type Migration = String;
     fn plan(&self) -> Vec<Self::Migration> {
         let mut migrations = vec![];
@@ -83,6 +64,8 @@ fn get_id(stmt: &IndexStmt) -> RelationId {
 
 #[cfg(test)]
 mod tests {
+    use crate::SqlDiffer;
+
     use super::*;
 
     #[test]

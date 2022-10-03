@@ -4,11 +4,13 @@ mod config;
 mod macros;
 mod parser;
 mod repo;
+mod types;
 mod utils;
 
 use anyhow::Result;
 use async_trait::async_trait;
 use config::RenovateOutputConfig;
+use pg_query::NodeEnum;
 use std::path::PathBuf;
 
 pub use config::RenovateConfig;
@@ -26,6 +28,23 @@ pub trait SqlSaver {
     async fn save(&self, config: &RenovateOutputConfig) -> Result<()>;
 }
 
+/// Object for SqlDiff<T> must satisfy DiffItem trait
+pub trait DiffItem {
+    fn id(&self) -> String;
+    fn node(&self) -> &NodeEnum;
+}
+
+/// Record the diff for a schema object
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SqlDiff<T>
+where
+    T: DiffItem,
+{
+    pub old: Option<T>,
+    pub new: Option<T>,
+    pub diff: String,
+}
+
 pub trait SqlDiffer {
     type Delta: MigrationPlanner;
     /// find the schema change
@@ -34,6 +53,11 @@ pub trait SqlDiffer {
 
 pub trait MigrationPlanner {
     type Migration: ToString;
+
+    // fn drop(&self) -> Result<Self::Migration>;
+    // fn create(&self) -> Result<Self::Migration>;
+    // fn alter(&self) -> Result<Self::Migration>;
+
     /// generate schema migration
     fn plan(&self) -> Vec<Self::Migration>;
 }
