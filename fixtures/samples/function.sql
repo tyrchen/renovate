@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION auth.uid()
+CREATE OR REPLACE FUNCTION auth.uid(name text, age integer)
 RETURNS uuid
 LANGUAGE SQL stable
 AS $$

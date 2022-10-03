@@ -3,7 +3,7 @@ use crate::{
     DatabaseSchema, SqlSaver,
 };
 use async_trait::async_trait;
-use std::{collections::BTreeMap, path::Path};
+use std::{collections::BTreeMap, fmt, path::Path};
 use tokio::fs;
 
 macro_rules! join_items {
@@ -186,9 +186,8 @@ impl SchemaSaver {
     }
 }
 
-impl ToString for SchemaSaver {
-    /// combine all strings into one
-    fn to_string(&self) -> String {
+impl fmt::Display for SchemaSaver {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut result = String::new();
 
         join_nested_items!(&self.types, result);
@@ -199,6 +198,6 @@ impl ToString for SchemaSaver {
         join_items!(&self.triggers, result);
         join_items!(&self.privileges, result);
 
-        result
+        write!(f, "{}", result)
     }
 }

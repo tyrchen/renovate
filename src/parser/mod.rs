@@ -1,5 +1,6 @@
 mod constraint;
 mod function;
+mod id;
 mod index;
 mod privilege;
 mod table;
@@ -85,10 +86,17 @@ pub struct View {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Function {
     pub id: SchemaId,
-    pub args: Vec<String>,
+    pub args: Vec<FunctionArg>,
     pub returns: String,
     // for function definition, if it changed we will just drop and recreate it
     pub node: DebugIgnore<NodeEnum>,
+}
+
+/// Function defined in the schema
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionArg {
+    pub name: String,
+    pub data_type: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -140,33 +148,4 @@ pub struct Extension {
 pub struct Policy {
     pub id: SchemaId,
     pub node: DebugIgnore<NodeEnum>,
-}
-
-impl SchemaId {
-    pub fn new(schema: impl Into<String>, name: impl Into<String>) -> Self {
-        Self {
-            schema: schema.into(),
-            name: name.into(),
-        }
-    }
-}
-
-impl RelationId {
-    pub fn new(
-        schema: impl Into<String>,
-        relation: impl Into<String>,
-        name: impl Into<String>,
-    ) -> Self {
-        Self {
-            schema_id: SchemaId::new(schema, relation),
-            name: name.into(),
-        }
-    }
-
-    pub fn new_with(schema_id: SchemaId, name: impl Into<String>) -> Self {
-        Self {
-            schema_id,
-            name: name.into(),
-        }
-    }
 }

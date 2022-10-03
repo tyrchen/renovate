@@ -27,9 +27,9 @@ pub trait SqlSaver {
 }
 
 pub trait SqlDiffer {
-    type Delta: ToString + MigrationPlanner;
+    type Delta: MigrationPlanner;
     /// find the schema change
-    fn diff(&self, remote: &Self) -> Vec<Self::Delta>;
+    fn diff(&self, remote: &Self) -> Result<Option<Self::Delta>>;
 }
 
 pub trait MigrationPlanner {

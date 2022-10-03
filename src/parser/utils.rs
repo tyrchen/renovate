@@ -1,10 +1,13 @@
+use super::{EmbedConstraint, SchemaId};
+use anyhow::Result;
+use console::{style, Style};
 use pg_query::{
     protobuf::{ConstrType, RangeVar, TypeName},
     Node, NodeEnum,
 };
 use serde::Deserialize;
-
-use super::{EmbedConstraint, SchemaId};
+use similar::{ChangeTag, TextDiff};
+use std::fmt::{self, Write};
 
 impl From<&RangeVar> for SchemaId {
     fn from(range_var: &RangeVar) -> Self {
@@ -26,13 +29,14 @@ pub fn get_node_str(n: &Node) -> Option<&str> {
     }
 }
 
-pub fn get_type_name(data_type: &TypeName) -> String {
-    data_type
-        .names
-        .iter()
-        .filter_map(get_node_str)
-        .collect::<Vec<_>>()
-        .join(".")
+pub fn get_type_name(data_type: Option<&TypeName>) -> Option<String> {
+    data_type.map(|t| {
+        t.names
+            .iter()
+            .filter_map(get_node_str)
+            .collect::<Vec<_>>()
+            .join(".")
+    })
 }
 
 #[allow(dead_code)]
@@ -84,4 +88,55 @@ where
         _ => ConstrType::Undefined,
     };
     Ok(v)
+}
+
+struct Line(Option<usize>);
+
+impl fmt::Display for Line {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            None => write!(f, "    "),
+            Some(idx) => write!(f, "{:<4}", idx + 1),
+        }
+    }
+}
+
+/// generate the diff between two strings. TODO: this is just for console output for now
+pub fn diff_text(text1: &str, text2: &str) -> Result<String> {
+    let mut output = String::new();
+    let diff = TextDiff::from_lines(text1, text2);
+
+    for (idx, group) in diff.grouped_ops(3).iter().enumerate() {
+        if idx > 0 {
+            writeln!(&mut output, "{:-^1$}", "-", 80)?;
+        }
+        for op in group {
+            for change in diff.iter_inline_changes(op) {
+                let (sign, s) = match change.tag() {
+                    ChangeTag::Delete => ("-", Style::new().red()),
+                    ChangeTag::Insert => ("+", Style::new().green()),
+                    ChangeTag::Equal => (" ", Style::new().dim()),
+                };
+                write!(
+                    &mut output,
+                    "{}{} |{}",
+                    style(Line(change.old_index())).dim(),
+                    style(Line(change.new_index())).dim(),
+                    s.apply_to(sign).bold(),
+                )?;
+                for (emphasized, value) in change.iter_strings_lossy() {
+                    if emphasized {
+                        write!(&mut output, "{}", s.apply_to(value).underlined().on_black())?;
+                    } else {
+                        write!(&mut output, "{}", s.apply_to(value))?;
+                    }
+                }
+                if change.missing_newline() {
+                    writeln!(&mut output)?;
+                }
+            }
+        }
+    }
+
+    Ok(output)
 }

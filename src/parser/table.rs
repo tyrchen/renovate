@@ -40,11 +40,9 @@ impl TryFrom<&ColumnDef> for Column {
     type Error = anyhow::Error;
     fn try_from(column: &ColumnDef) -> Result<Self, Self::Error> {
         let name = column.colname.clone();
-        let data_type = column
-            .type_name
-            .as_ref()
-            .ok_or_else(|| anyhow!("no data type"))?;
-        let type_name = get_type_name(data_type);
+
+        let type_name =
+            get_type_name(column.type_name.as_ref()).ok_or_else(|| anyhow!("no data type"))?;
         // let type_modifier = get_type_mod(data_type);
         let nullable = !column.is_not_null;
         let default = column
