@@ -169,7 +169,7 @@ pub struct Privilege {
     pub node: DebugIgnore<NodeEnum>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SinglePriv {
     pub name: String,
     pub cols: BTreeSet<String>,

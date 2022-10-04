@@ -11,7 +11,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use config::RenovateOutputConfig;
 use pg_query::NodeEnum;
-use std::path::PathBuf;
+use std::{collections::BTreeSet, path::PathBuf};
 
 pub use config::RenovateConfig;
 pub use parser::DatabaseSchema;
@@ -43,6 +43,14 @@ where
     pub old: Option<T>,
     pub new: Option<T>,
     pub diff: String,
+}
+
+/// Record the changes for a schema object
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NodeDelta<T> {
+    pub added: BTreeSet<T>,
+    pub removed: BTreeSet<T>,
+    pub changed: BTreeSet<(T, T)>,
 }
 
 /// Diffing two objects to get deltas
