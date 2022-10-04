@@ -2,6 +2,7 @@ mod alter_table;
 mod function;
 mod index;
 mod privilege;
+mod sequence;
 mod table;
 mod table_constraint;
 mod table_owner;
@@ -11,8 +12,11 @@ mod utils;
 mod view;
 
 use debug_ignore::DebugIgnore;
-use pg_query::{protobuf::ConstrType, NodeEnum};
-use std::collections::BTreeMap;
+use pg_query::{
+    protobuf::{ConstrType, GrantTargetType, ObjectType},
+    NodeEnum,
+};
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SchemaId {
@@ -156,7 +160,19 @@ pub struct TableConstraint {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Privilege {
+    pub id: String,
+    pub target_type: GrantTargetType,
+    pub object_type: ObjectType,
+    pub privileges: BTreeMap<String, SinglePriv>,
+    pub grantee: String,
+    pub grant: bool,
     pub node: DebugIgnore<NodeEnum>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SinglePriv {
+    pub name: String,
+    pub cols: BTreeSet<String>,
 }
 
 /// Index for table or material view

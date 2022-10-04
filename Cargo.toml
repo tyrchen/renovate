@@ -26,6 +26,7 @@ debug-ignore = "1.0.3"
 git2 = { version = "0.15.0", default-features = false }
 glob = "0.3.0"
 itertools = "0.10.5"
+nom = "7.1.1"
 pg_query = "0.7.0"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_yaml = "0.9.13"

@@ -1,5 +1,5 @@
 use super::{RelationId, TableIndex};
-use crate::{DiffItem, MigrationPlanner, SqlDiff};
+use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
 use debug_ignore::DebugIgnore;
 use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
@@ -40,7 +40,7 @@ impl TryFrom<&IndexStmt> for TableIndex {
     }
 }
 
-impl MigrationPlanner for SqlDiff<TableIndex> {
+impl MigrationPlanner for NodeDiff<TableIndex> {
     type Migration = String;
 
     fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
@@ -53,7 +53,7 @@ impl MigrationPlanner for SqlDiff<TableIndex> {
 
     fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse().unwrap())))
+            Ok(Some(format!("{};", new.node.deparse()?)))
         } else {
             Ok(None)
         }
@@ -73,7 +73,7 @@ fn get_id(stmt: &IndexStmt) -> RelationId {
 
 #[cfg(test)]
 mod tests {
-    use crate::SqlDiffer;
+    use crate::Differ;
 
     use super::*;
 

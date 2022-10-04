@@ -2,7 +2,7 @@ use super::{
     utils::{get_node_str, get_type_name},
     Function, FunctionArg, SchemaId,
 };
-use crate::{DiffItem, MigrationPlanner, SqlDiff};
+use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
 use debug_ignore::DebugIgnore;
 use itertools::Itertools;
@@ -51,7 +51,7 @@ impl TryFrom<&CreateFunctionStmt> for Function {
     }
 }
 
-impl MigrationPlanner for SqlDiff<Function> {
+impl MigrationPlanner for NodeDiff<Function> {
     type Migration = String;
 
     fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
@@ -64,7 +64,7 @@ impl MigrationPlanner for SqlDiff<Function> {
 
     fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse().unwrap())))
+            Ok(Some(format!("{};", new.node.deparse()?)))
         } else {
             Ok(None)
         }
@@ -98,7 +98,7 @@ fn parse_args(args: &[Node]) -> Vec<FunctionArg> {
 
 #[cfg(test)]
 mod tests {
-    use crate::SqlDiffer;
+    use crate::Differ;
 
     use super::*;
 

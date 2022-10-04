@@ -34,9 +34,9 @@ pub trait DiffItem {
     fn node(&self) -> &NodeEnum;
 }
 
-/// Record the diff for a schema object
+/// Record the old/new for a schema object
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SqlDiff<T>
+pub struct NodeDiff<T>
 where
     T: DiffItem,
 {
@@ -46,7 +46,7 @@ where
 }
 
 /// Diffing two objects to get deltas
-pub trait SqlDiffer {
+pub trait Differ {
     type Delta: MigrationPlanner;
     /// find the schema change
     fn diff(&self, remote: &Self) -> Result<Option<Self::Delta>>;

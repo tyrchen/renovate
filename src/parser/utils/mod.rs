@@ -1,3 +1,5 @@
+pub mod parsec;
+
 use super::{ConstraintInfo, SchemaId};
 use anyhow::Result;
 use pg_query::{

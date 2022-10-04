@@ -1,5 +1,5 @@
 use super::{RelationId, Trigger};
-use crate::{DiffItem, MigrationPlanner, SqlDiff};
+use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
 use debug_ignore::DebugIgnore;
 use pg_query::{protobuf::CreateTrigStmt, NodeEnum, NodeRef};
@@ -41,7 +41,7 @@ impl TryFrom<&CreateTrigStmt> for Trigger {
     }
 }
 
-impl MigrationPlanner for SqlDiff<Trigger> {
+impl MigrationPlanner for NodeDiff<Trigger> {
     type Migration = String;
 
     fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
@@ -54,7 +54,7 @@ impl MigrationPlanner for SqlDiff<Trigger> {
 
     fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse().unwrap())))
+            Ok(Some(format!("{};", new.node.deparse()?)))
         } else {
             Ok(None)
         }
@@ -76,7 +76,7 @@ fn get_id(stmt: &CreateTrigStmt) -> RelationId {
 
 #[cfg(test)]
 mod tests {
-    use crate::SqlDiffer;
+    use crate::Differ;
 
     use super::*;
 

@@ -1,5 +1,5 @@
 use super::{SchemaId, View};
-use crate::{DiffItem, MigrationPlanner, SqlDiff};
+use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
 use debug_ignore::DebugIgnore;
 use pg_query::{
@@ -56,7 +56,7 @@ impl TryFrom<&CreateTableAsStmt> for View {
     }
 }
 
-impl MigrationPlanner for SqlDiff<View> {
+impl MigrationPlanner for NodeDiff<View> {
     type Migration = String;
 
     fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
@@ -75,7 +75,7 @@ impl MigrationPlanner for SqlDiff<View> {
 
     fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse().unwrap())))
+            Ok(Some(format!("{};", new.node.deparse()?)))
         } else {
             Ok(None)
         }
@@ -100,7 +100,7 @@ fn get_mview_id(stmt: &CreateTableAsStmt) -> SchemaId {
 
 #[cfg(test)]
 mod tests {
-    use crate::SqlDiffer;
+    use crate::Differ;
 
     use super::*;
 

@@ -1,11 +1,11 @@
-use crate::{utils::create_diff, DiffItem, MigrationPlanner, SqlDiff, SqlDiffer};
+use crate::{utils::create_diff, DiffItem, Differ, MigrationPlanner, NodeDiff};
 
-impl<T> SqlDiffer for T
+impl<T> Differ for T
 where
     T: PartialEq + Clone + DiffItem,
-    SqlDiff<T>: MigrationPlanner,
+    NodeDiff<T>: MigrationPlanner,
 {
-    type Delta = SqlDiff<T>;
+    type Delta = NodeDiff<T>;
     fn diff(&self, remote: &Self) -> anyhow::Result<Option<Self::Delta>> {
         let local_id = self.id();
         let remote_id = remote.id();
@@ -15,7 +15,7 @@ where
 
         if self != remote {
             let diff = create_diff(self.node(), remote.node())?;
-            Ok(Some(SqlDiff {
+            Ok(Some(NodeDiff {
                 old: Some(self.clone()),
                 new: Some(remote.clone()),
                 diff,
