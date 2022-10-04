@@ -1,4 +1,5 @@
 use crate::NodeDelta;
+use pg_query::NodeEnum;
 use std::collections::{BTreeMap, BTreeSet};
 
 impl<T> NodeDelta<T>
@@ -31,5 +32,30 @@ where
         }
 
         delta
+    }
+
+    pub fn plan(
+        self,
+        node: &NodeEnum,
+        gen_sql: fn(&NodeEnum, Option<T>, bool) -> anyhow::Result<String>,
+    ) -> anyhow::Result<Option<Vec<String>>> {
+        let mut migrations = Vec::new();
+        for removed in self.removed {
+            let sql = gen_sql(node, Some(removed), false)?;
+            migrations.push(format!("{};", sql));
+        }
+
+        for added in self.added {
+            let sql = gen_sql(node, Some(added), true)?;
+            migrations.push(format!("{};", sql));
+        }
+
+        for (v1, v2) in self.changed {
+            let sql = gen_sql(node, Some(v1), false)?;
+            migrations.push(format!("{};", sql));
+            let sql = gen_sql(node, Some(v2), true)?;
+            migrations.push(format!("{};", sql));
+        }
+        Ok(Some(migrations))
     }
 }

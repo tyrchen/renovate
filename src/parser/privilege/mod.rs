@@ -89,24 +89,7 @@ impl MigrationPlanner for NodeDiff<Privilege> {
                     return Ok(None);
                 }
                 let delta = NodeDelta::calculate(&old.privileges, &new.privileges);
-                let mut migrations = Vec::new();
-                for removed in delta.removed {
-                    let sql = gen_grant_sql(&old.node, Some(removed), false)?;
-                    migrations.push(format!("{};", sql));
-                }
-
-                for added in delta.added {
-                    let sql = gen_grant_sql(&old.node, Some(added), true)?;
-                    migrations.push(format!("{};", sql));
-                }
-
-                for (v1, v2) in delta.changed {
-                    let sql = gen_grant_sql(&old.node, Some(v1), false)?;
-                    migrations.push(format!("{};", sql));
-                    let sql = gen_grant_sql(&new.node, Some(v2), true)?;
-                    migrations.push(format!("{};", sql));
-                }
-                Ok(Some(migrations))
+                delta.plan(&old.node, gen_grant_sql)
             }
             _ => Ok(None),
         }
