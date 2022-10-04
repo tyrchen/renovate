@@ -1,5 +1,5 @@
-use super::{AlterTable, AlterTableAction, SchemaId};
 use crate::parser::ConstraintInfo;
+use crate::parser::{AlterTable, AlterTableAction, SchemaId};
 use anyhow::{anyhow, Context};
 use debug_ignore::DebugIgnore;
 use pg_query::{

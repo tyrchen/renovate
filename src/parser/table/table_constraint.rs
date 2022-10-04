@@ -1,8 +1,12 @@
-use std::str::FromStr;
-
-use super::{AlterTable, AlterTableAction, ConstraintInfo, RelationId, SchemaId, TableConstraint};
+use crate::parser::{
+    AlterTable, AlterTableAction, ConstraintInfo, RelationId, SchemaId, TableConstraint,
+};
 use debug_ignore::DebugIgnore;
-use pg_query::{NodeEnum, NodeRef};
+use pg_query::{
+    protobuf::{ConstrType, Constraint as PgConstraint},
+    NodeEnum, NodeRef,
+};
+use std::str::FromStr;
 
 impl FromStr for TableConstraint {
     type Err = anyhow::Error;
@@ -34,19 +38,16 @@ impl TableConstraint {
     }
 }
 
-// impl TryFrom<(SchemaId, &AlterTableStmt, &PgConstraint)> for Constraint {
-//     type Error = anyhow::Error;
-//     fn try_from(
-//         (id, alter, constraint): (SchemaId, &AlterTableStmt, &PgConstraint),
-//     ) -> Result<Self, Self::Error> {
-//         let name = constraint.conname.clone();
-//         let con_type = ConstrType::from_i32(constraint.contype).unwrap();
-//         let id = RelationId::new_with(id, name);
-//         let node = NodeEnum::AlterTableStmt(alter.clone());
-//         Ok(Self {
-//             id,
-//             con_type,
-//             node: DebugIgnore(node),
-//         })
-//     }
-// }
+impl TryFrom<&PgConstraint> for ConstraintInfo {
+    type Error = anyhow::Error;
+    fn try_from(constraint: &PgConstraint) -> Result<Self, Self::Error> {
+        let con_type = ConstrType::from_i32(constraint.contype).unwrap();
+        let node = NodeEnum::Constraint(Box::new(constraint.clone()));
+        let name = constraint.conname.clone();
+        Ok(Self {
+            name,
+            con_type,
+            node: DebugIgnore(node),
+        })
+    }
+}

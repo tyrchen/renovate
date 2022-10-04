@@ -1,12 +1,8 @@
-mod alter_table;
 mod function;
 mod index;
 mod privilege;
 mod sequence;
 mod table;
-mod table_constraint;
-mod table_owner;
-mod table_rls;
 mod trigger;
 mod utils;
 mod view;

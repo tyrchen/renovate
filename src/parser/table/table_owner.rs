@@ -1,4 +1,4 @@
-use super::{AlterTable, AlterTableAction, SchemaId, TableOwner};
+use crate::parser::{AlterTable, AlterTableAction, SchemaId, TableOwner};
 use debug_ignore::DebugIgnore;
 use pg_query::NodeEnum;
 
