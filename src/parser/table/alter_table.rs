@@ -1,7 +1,6 @@
 use crate::parser::ConstraintInfo;
 use crate::parser::{AlterTable, AlterTableAction, SchemaId};
 use anyhow::{anyhow, Context};
-use debug_ignore::DebugIgnore;
 use pg_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType},
     NodeEnum,
@@ -25,11 +24,7 @@ impl TryFrom<&AlterTableStmt> for AlterTable {
 
         let node = NodeEnum::AlterTableStmt(alter.clone());
 
-        Ok(Self {
-            id,
-            action,
-            node: DebugIgnore(node),
-        })
+        Ok(Self { id, action, node })
     }
 }
 

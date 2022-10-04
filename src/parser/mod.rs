@@ -7,7 +7,7 @@ mod trigger;
 mod utils;
 mod view;
 
-use debug_ignore::DebugIgnore;
+use derivative::Derivative;
 use pg_query::{
     protobuf::{ConstrType, GrantTargetType, ObjectType},
     NodeEnum,
@@ -26,7 +26,7 @@ pub struct RelationId {
 }
 
 /// All the parsed information about a database
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DatabaseSchema {
     pub extensions: BTreeMap<String, BTreeMap<String, Extension>>,
 
@@ -54,7 +54,7 @@ pub struct DatabaseSchema {
 }
 
 /// Postgres schema
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Schema {
     pub name: String,
     pub types: BTreeMap<String, DataType>,
@@ -64,54 +64,61 @@ pub struct Schema {
 }
 
 /// Trigger defined in the database
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Clone)]
+#[derivative(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Trigger {
     pub id: String,
-    // for trigger definition, if it changed we will just drop and recreate it
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// Data type defined in the schema
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct DataType {
     pub id: SchemaId,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// Table defined in the schema
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Table {
     pub id: SchemaId,
     pub columns: BTreeMap<String, Column>,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// View defined in the schema
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct View {
     pub id: SchemaId,
-    // for view definition, if it changed we will just drop and recreate it
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// Function defined in the schema
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Function {
     pub id: SchemaId,
     pub args: Vec<FunctionArg>,
     pub returns: String,
-    // for function definition, if it changed we will just drop and recreate it
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// Function defined in the schema
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FunctionArg {
     pub name: String,
     pub data_type: String,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Column {
     pub name: String,
     pub type_name: String,
@@ -120,41 +127,50 @@ pub struct Column {
     pub constraints: Vec<ConstraintInfo>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sequence {
     pub id: RelationId,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TableSequence {
     pub id: RelationId,
     pub seq: Sequence,
     pub info: SequenceInfo,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct SequenceInfo {
     pub id: RelationId,
     pub column: String,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct ConstraintInfo {
     pub name: String,
     pub con_type: ConstrType,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TableConstraint {
     pub id: RelationId,
     pub info: ConstraintInfo,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Privilege {
     pub id: String,
     pub target_type: GrantTargetType,
@@ -162,7 +178,8 @@ pub struct Privilege {
     pub privileges: BTreeMap<String, SinglePriv>,
     pub grantee: String,
     pub grant: bool,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -172,35 +189,43 @@ pub struct SinglePriv {
 }
 
 /// Index for table or material view
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TableIndex {
     pub id: RelationId,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Extension {
     pub id: SchemaId,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TablePolicy {
     pub id: SchemaId,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// Struct to capture all alter table statements
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct AlterTable {
     pub id: SchemaId,
     // for sql from pg_dump, only one action is used
     pub action: AlterTableAction,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// Supported alter table actions
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AlterTableAction {
     Constraint(Box<ConstraintInfo>),
     Rls,
@@ -208,16 +233,20 @@ pub enum AlterTableAction {
 }
 
 /// Struct to capture `ALTER TABLE ENABLE ROW LEVEL SECURITY;`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TableRls {
     pub id: SchemaId,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 /// Struct to capture `ALTER TABLE OWNER TO new_owner;`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TableOwner {
     pub id: SchemaId,
     pub owner: String,
-    pub node: DebugIgnore<NodeEnum>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }

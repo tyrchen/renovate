@@ -1,7 +1,6 @@
 use crate::parser::{
     AlterTable, AlterTableAction, ConstraintInfo, RelationId, SchemaId, TableConstraint,
 };
-use debug_ignore::DebugIgnore;
 use pg_query::{
     protobuf::{ConstrType, Constraint as PgConstraint},
     NodeEnum, NodeRef,
@@ -32,7 +31,7 @@ impl TryFrom<AlterTable> for TableConstraint {
 }
 
 impl TableConstraint {
-    fn new(id: SchemaId, info: ConstraintInfo, node: DebugIgnore<NodeEnum>) -> Self {
+    fn new(id: SchemaId, info: ConstraintInfo, node: NodeEnum) -> Self {
         let id = RelationId::new_with(id, info.name.clone());
         Self { id, info, node }
     }
@@ -47,7 +46,7 @@ impl TryFrom<&PgConstraint> for ConstraintInfo {
         Ok(Self {
             name,
             con_type,
-            node: DebugIgnore(node),
+            node,
         })
     }
 }

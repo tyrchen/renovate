@@ -1,7 +1,6 @@
 use super::{RelationId, Trigger};
 use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
-use debug_ignore::DebugIgnore;
 use pg_query::{protobuf::CreateTrigStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
 
@@ -34,10 +33,7 @@ impl TryFrom<&CreateTrigStmt> for Trigger {
     fn try_from(stmt: &CreateTrigStmt) -> Result<Self, Self::Error> {
         let id = stmt.trigname.clone();
         let node = NodeEnum::CreateTrigStmt(Box::new(stmt.clone()));
-        Ok(Self {
-            id,
-            node: DebugIgnore(node),
-        })
+        Ok(Self { id, node })
     }
 }
 

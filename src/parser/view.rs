@@ -1,7 +1,6 @@
 use super::{SchemaId, View};
 use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
-use debug_ignore::DebugIgnore;
 use pg_query::{
     protobuf::{CreateTableAsStmt, ViewStmt},
     NodeEnum, NodeRef,
@@ -37,10 +36,7 @@ impl TryFrom<&ViewStmt> for View {
     fn try_from(stmt: &ViewStmt) -> Result<Self, Self::Error> {
         let id = get_view_id(stmt);
         let node = NodeEnum::ViewStmt(Box::new(stmt.clone()));
-        Ok(Self {
-            id,
-            node: DebugIgnore(node),
-        })
+        Ok(Self { id, node })
     }
 }
 
@@ -49,10 +45,7 @@ impl TryFrom<&CreateTableAsStmt> for View {
     fn try_from(stmt: &CreateTableAsStmt) -> Result<Self, Self::Error> {
         let id = get_mview_id(stmt);
         let node = NodeEnum::CreateTableAsStmt(Box::new(stmt.clone()));
-        Ok(Self {
-            id,
-            node: DebugIgnore(node),
-        })
+        Ok(Self { id, node })
     }
 }
 

@@ -3,15 +3,11 @@ mod single_priv;
 use super::{Privilege, SinglePriv};
 use crate::{parser::SchemaId, DiffItem, MigrationPlanner, NodeDelta, NodeDiff};
 use anyhow::Context;
-use debug_ignore::DebugIgnore;
 use pg_query::{
     protobuf::{GrantStmt, GrantTargetType, ObjectType},
     Node, NodeEnum, NodeRef,
 };
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    str::FromStr,
-};
+use std::{collections::BTreeMap, str::FromStr};
 
 impl DiffItem for Privilege {
     fn id(&self) -> String {
@@ -52,7 +48,7 @@ impl TryFrom<&GrantStmt> for Privilege {
             id,
             privileges,
             grantee,
-            node: DebugIgnore(node),
+            node,
             grant: stmt.is_grant,
         })
     }
@@ -92,7 +88,7 @@ impl MigrationPlanner for NodeDiff<Privilege> {
                     // we can't alter these privilege changes, so we need to drop and recreate it
                     return Ok(None);
                 }
-                let delta = difference(&old.privileges, &new.privileges);
+                let delta = NodeDelta::calculate(&old.privileges, &new.privileges);
                 let mut migrations = Vec::new();
                 for removed in delta.removed {
                     let sql = gen_grant_sql(&old.node, Some(removed), false)?;
@@ -115,37 +111,6 @@ impl MigrationPlanner for NodeDiff<Privilege> {
             _ => Ok(None),
         }
     }
-}
-
-fn difference(
-    old: &BTreeMap<String, SinglePriv>,
-    new: &BTreeMap<String, SinglePriv>,
-) -> NodeDelta<SinglePriv> {
-    let mut delta = NodeDelta::default();
-
-    let old_keys: BTreeSet<_> = old.keys().collect();
-    let new_keys: BTreeSet<_> = new.keys().collect();
-    let added = new_keys.difference(&old_keys);
-    let removed = old_keys.difference(&new_keys);
-    let might_changed = old_keys.intersection(&new_keys);
-
-    for key in added {
-        delta.added.insert(new[*key].clone());
-    }
-
-    for key in removed {
-        delta.removed.insert(old[*key].clone());
-    }
-
-    for key in might_changed {
-        let old_priv = &old[*key];
-        let new_priv = &new[*key];
-        if old_priv != new_priv {
-            delta.changed.insert((old_priv.clone(), new_priv.clone()));
-        }
-    }
-
-    delta
 }
 
 fn gen_grant_sql(node: &NodeEnum, sp: Option<SinglePriv>, grant: bool) -> anyhow::Result<String> {

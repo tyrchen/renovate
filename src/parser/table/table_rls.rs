@@ -1,5 +1,4 @@
 use crate::parser::{AlterTable, AlterTableAction, SchemaId, TableRls};
-use debug_ignore::DebugIgnore;
 use pg_query::NodeEnum;
 
 impl TryFrom<AlterTable> for TableRls {
@@ -13,7 +12,7 @@ impl TryFrom<AlterTable> for TableRls {
 }
 
 impl TableRls {
-    fn new(id: SchemaId, node: DebugIgnore<NodeEnum>) -> Self {
+    fn new(id: SchemaId, node: NodeEnum) -> Self {
         Self { id, node }
     }
 }

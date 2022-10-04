@@ -1,7 +1,6 @@
 use super::{RelationId, TableIndex};
 use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
-use debug_ignore::DebugIgnore;
 use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
 
@@ -33,10 +32,7 @@ impl TryFrom<&IndexStmt> for TableIndex {
     fn try_from(stmt: &IndexStmt) -> Result<Self, Self::Error> {
         let id = get_id(stmt);
         let node = pg_query::NodeEnum::IndexStmt(Box::new(stmt.clone()));
-        Ok(Self {
-            id,
-            node: DebugIgnore(node),
-        })
+        Ok(Self { id, node })
     }
 }
 

@@ -1,5 +1,4 @@
 use crate::parser::{AlterTable, AlterTableAction, SchemaId, TableOwner};
-use debug_ignore::DebugIgnore;
 use pg_query::NodeEnum;
 
 impl TryFrom<AlterTable> for TableOwner {
@@ -13,7 +12,7 @@ impl TryFrom<AlterTable> for TableOwner {
 }
 
 impl TableOwner {
-    fn new(id: SchemaId, owner: String, node: DebugIgnore<NodeEnum>) -> Self {
+    fn new(id: SchemaId, owner: String, node: NodeEnum) -> Self {
         Self { id, owner, node }
     }
 }

@@ -4,7 +4,6 @@ use super::{
 };
 use crate::{DiffItem, MigrationPlanner, NodeDiff};
 use anyhow::Context;
-use debug_ignore::DebugIgnore;
 use itertools::Itertools;
 use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
 use std::str::FromStr;
@@ -46,7 +45,7 @@ impl TryFrom<&CreateFunctionStmt> for Function {
             id,
             args,
             returns,
-            node: DebugIgnore(node),
+            node,
         })
     }
 }
