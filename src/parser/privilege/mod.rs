@@ -1,7 +1,7 @@
 mod single_priv;
 
 use super::{Privilege, SinglePriv};
-use crate::{parser::SchemaId, DiffItem, MigrationPlanner, NodeDelta, NodeDiff};
+use crate::{parser::SchemaId, DiffItem, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff};
 use anyhow::Context;
 use pg_query::{
     protobuf::{GrantStmt, GrantTargetType, ObjectType},
@@ -57,26 +57,26 @@ impl TryFrom<&GrantStmt> for Privilege {
 impl MigrationPlanner for NodeDiff<Privilege> {
     type Migration = String;
 
-    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            let sql = gen_grant_sql(&old.node, None, !old.grant)?;
+            let sqls = gen_grant_sql(&old.node, None, !old.grant)?;
 
-            Ok(Some(format!("{};", sql)))
+            Ok(sqls)
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            let sql = gen_grant_sql(&new.node, None, new.grant)?;
-            Ok(Some(format!("{};", sql)))
+            let sqls = gen_grant_sql(&new.node, None, new.grant)?;
+            Ok(sqls)
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
+    fn alter(&self) -> MigrationResult<Self::Migration> {
         match (&self.old, &self.new) {
             (Some(old), Some(new)) => {
                 if old.grant != new.grant
@@ -86,17 +86,21 @@ impl MigrationPlanner for NodeDiff<Privilege> {
                     || new.privileges.is_empty()
                 {
                     // we can't alter these privilege changes, so we need to drop and recreate it
-                    return Ok(None);
+                    return Ok(vec![]);
                 }
                 let delta = NodeDelta::calculate(&old.privileges, &new.privileges);
-                delta.plan(&old.node, gen_grant_sql)
+                delta.plan(&old.node, gen_grant_sql, gen_grant_sql_for_changed)
             }
-            _ => Ok(None),
+            _ => Ok(vec![]),
         }
     }
 }
 
-fn gen_grant_sql(node: &NodeEnum, sp: Option<SinglePriv>, grant: bool) -> anyhow::Result<String> {
+fn gen_grant_sql(
+    node: &NodeEnum,
+    sp: Option<SinglePriv>,
+    grant: bool,
+) -> anyhow::Result<Vec<String>> {
     let mut stmt = match node {
         NodeEnum::GrantStmt(stmt) => stmt.clone(),
         _ => anyhow::bail!("not a grant statement"),
@@ -107,7 +111,21 @@ fn gen_grant_sql(node: &NodeEnum, sp: Option<SinglePriv>, grant: bool) -> anyhow
             node: Some(NodeEnum::AccessPriv(sp.into())),
         }];
     }
-    Ok(NodeEnum::GrantStmt(stmt).deparse()?)
+    let sql = format!("{};", NodeEnum::GrantStmt(stmt).deparse()?);
+    Ok(vec![sql])
+}
+
+fn gen_grant_sql_for_changed(
+    node: &NodeEnum,
+    v1: SinglePriv,
+    v2: SinglePriv,
+) -> anyhow::Result<Vec<String>> {
+    let mut migrations = vec![];
+    let sql = gen_grant_sql(node, Some(v1), false)?;
+    migrations.extend(sql);
+    let sql = gen_grant_sql(node, Some(v2), true)?;
+    migrations.extend(sql);
+    Ok(migrations)
 }
 
 fn get_target_type(stmt: &GrantStmt) -> GrantTargetType {

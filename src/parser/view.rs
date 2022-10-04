@@ -1,5 +1,5 @@
 use super::{SchemaId, View};
-use crate::{DiffItem, MigrationPlanner, NodeDiff};
+use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDiff};
 use anyhow::Context;
 use pg_query::{
     protobuf::{CreateTableAsStmt, ViewStmt},
@@ -52,30 +52,35 @@ impl TryFrom<&CreateTableAsStmt> for View {
 impl MigrationPlanner for NodeDiff<View> {
     type Migration = String;
 
-    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
             match old.node() {
-                NodeEnum::ViewStmt(_) => Ok(Some(format!("DROP VIEW {};", old.id))),
+                NodeEnum::ViewStmt(_) => {
+                    let sql = format!("DROP VIEW {};", old.id);
+                    Ok(vec![sql])
+                }
                 NodeEnum::CreateTableAsStmt(_) => {
-                    Ok(Some(format!("DROP MATERIALIZED VIEW {};", old.id)))
+                    let sql = format!("DROP MATERIALIZED VIEW {};", old.id);
+                    Ok(vec![sql])
                 }
                 _ => anyhow::bail!("not a view or materialized view"),
             }
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse()?)))
+            let sql = format!("{};", new.node.deparse()?);
+            Ok(vec![sql])
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
-        Ok(None)
+    fn alter(&self) -> MigrationResult<Self::Migration> {
+        Ok(vec![])
     }
 }
 

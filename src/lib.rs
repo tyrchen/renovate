@@ -60,19 +60,21 @@ pub trait Differ {
     fn diff(&self, remote: &Self) -> Result<Option<Self::Delta>>;
 }
 
+pub type MigrationResult<T> = Result<Vec<T>>;
 pub trait MigrationPlanner {
     type Migration: ToString;
 
     /// generate drop sql
-    fn drop(&self) -> Result<Option<Self::Migration>>;
+    fn drop(&self) -> MigrationResult<Self::Migration>;
     /// generate create sql
-    fn create(&self) -> Result<Option<Self::Migration>>;
+    fn create(&self) -> MigrationResult<Self::Migration>;
     /// generate alter sql
-    fn alter(&self) -> Result<Option<Vec<Self::Migration>>>;
+    fn alter(&self) -> MigrationResult<Self::Migration>;
 
     /// if alter return Some, use the result for migration directly; otherwise, use drop/create for migration
     fn plan(&self) -> Result<Vec<Self::Migration>> {
-        if let Some(items) = self.alter()? {
+        let items = self.alter()?;
+        if !items.is_empty() {
             return Ok(items);
         }
 

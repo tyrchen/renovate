@@ -1,5 +1,5 @@
 use super::{RelationId, TableIndex};
-use crate::{DiffItem, MigrationPlanner, NodeDiff};
+use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDiff};
 use anyhow::Context;
 use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
@@ -39,24 +39,26 @@ impl TryFrom<&IndexStmt> for TableIndex {
 impl MigrationPlanner for NodeDiff<TableIndex> {
     type Migration = String;
 
-    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            Ok(Some(format!("DROP INDEX {};", old.id.name)))
+            let sql = format!("DROP INDEX {};", old.id.name);
+            Ok(vec![sql])
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse()?)))
+            let sql = format!("{};", new.node.deparse()?);
+            Ok(vec![sql])
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
-        Ok(None)
+    fn alter(&self) -> MigrationResult<Self::Migration> {
+        Ok(vec![])
     }
 }
 

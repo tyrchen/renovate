@@ -37,25 +37,24 @@ where
     pub fn plan(
         self,
         node: &NodeEnum,
-        gen_sql: fn(&NodeEnum, Option<T>, bool) -> anyhow::Result<String>,
-    ) -> anyhow::Result<Option<Vec<String>>> {
+        gen_sql: fn(&NodeEnum, Option<T>, bool) -> anyhow::Result<Vec<String>>,
+        gen_sql_for_changed: fn(&NodeEnum, T, T) -> anyhow::Result<Vec<String>>,
+    ) -> anyhow::Result<Vec<String>> {
         let mut migrations = Vec::new();
         for removed in self.removed {
-            let sql = gen_sql(node, Some(removed), false)?;
-            migrations.push(format!("{};", sql));
+            let sqls = gen_sql(node, Some(removed), false)?;
+            migrations.extend(sqls);
         }
 
         for added in self.added {
-            let sql = gen_sql(node, Some(added), true)?;
-            migrations.push(format!("{};", sql));
+            let sqls = gen_sql(node, Some(added), true)?;
+            migrations.extend(sqls);
         }
 
         for (v1, v2) in self.changed {
-            let sql = gen_sql(node, Some(v1), false)?;
-            migrations.push(format!("{};", sql));
-            let sql = gen_sql(node, Some(v2), true)?;
-            migrations.push(format!("{};", sql));
+            let sqls = gen_sql_for_changed(node, v1, v2)?;
+            migrations.extend(sqls);
         }
-        Ok(Some(migrations))
+        Ok(migrations)
     }
 }

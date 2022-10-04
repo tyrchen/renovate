@@ -1,5 +1,5 @@
 use super::{RelationId, Trigger};
-use crate::{DiffItem, MigrationPlanner, NodeDiff};
+use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDiff};
 use anyhow::Context;
 use pg_query::{protobuf::CreateTrigStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
@@ -40,24 +40,26 @@ impl TryFrom<&CreateTrigStmt> for Trigger {
 impl MigrationPlanner for NodeDiff<Trigger> {
     type Migration = String;
 
-    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            Ok(Some(format!("DROP TRIGGER {};", old.id)))
+            let sql = format!("DROP TRIGGER {};", old.id);
+            Ok(vec![sql])
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse()?)))
+            let sql = format!("{};", new.node.deparse()?);
+            Ok(vec![sql])
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
-        Ok(None)
+    fn alter(&self) -> MigrationResult<Self::Migration> {
+        Ok(vec![])
     }
 }
 

@@ -2,7 +2,7 @@ use super::{
     utils::{get_node_str, get_type_name},
     Function, FunctionArg, SchemaId,
 };
-use crate::{DiffItem, MigrationPlanner, NodeDiff};
+use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDiff};
 use anyhow::Context;
 use itertools::Itertools;
 use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
@@ -53,24 +53,26 @@ impl TryFrom<&CreateFunctionStmt> for Function {
 impl MigrationPlanner for NodeDiff<Function> {
     type Migration = String;
 
-    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            Ok(Some(format!("DROP FUNCTION {};", old.id)))
+            let sql = format!("DROP FUNCTION {};", old.id);
+            Ok(vec![sql])
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse()?)))
+            let sql = format!("{};", new.node.deparse()?);
+            Ok(vec![sql])
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
-        Ok(None)
+    fn alter(&self) -> MigrationResult<Self::Migration> {
+        Ok(vec![])
     }
 }
 

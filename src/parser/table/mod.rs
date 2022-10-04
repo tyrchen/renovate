@@ -4,7 +4,7 @@ mod table_constraint;
 mod table_owner;
 mod table_rls;
 
-use crate::{DiffItem, MigrationPlanner, NodeDelta, NodeDiff};
+use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff};
 
 use super::{Column, SchemaId, Table};
 use anyhow::Context;
@@ -47,29 +47,31 @@ impl TryFrom<&CreateStmt> for Table {
 impl MigrationPlanner for NodeDiff<Table> {
     type Migration = String;
 
-    fn drop(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            Ok(Some(format!("DROP TABLE {};", old.id)))
+            let sqls = gen_table_sql(&old.node, None, false)?;
+            Ok(sqls)
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn create(&self) -> anyhow::Result<Option<Self::Migration>> {
+    fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            Ok(Some(format!("{};", new.node.deparse()?)))
+            let sqls = gen_table_sql(&new.node, None, true)?;
+            Ok(sqls)
         } else {
-            Ok(None)
+            Ok(vec![])
         }
     }
 
-    fn alter(&self) -> anyhow::Result<Option<Vec<Self::Migration>>> {
+    fn alter(&self) -> MigrationResult<Self::Migration> {
         match (&self.old, &self.new) {
             (Some(old), Some(new)) => {
                 let delta = NodeDelta::calculate(&old.columns, &new.columns);
-                delta.plan(&old.node, gen_table_sql)
+                delta.plan(&old.node, gen_table_sql, gen_table_sql_for_changes)
             }
-            _ => Ok(None),
+            _ => Ok(vec![]),
         }
     }
 }
@@ -89,7 +91,15 @@ fn get_columns(stmt: &CreateStmt) -> anyhow::Result<BTreeMap<String, Column>> {
 fn gen_table_sql(
     _stmt: &NodeEnum,
     _column: Option<Column>,
-    _grant: bool,
-) -> anyhow::Result<String> {
+    _add: bool,
+) -> anyhow::Result<Vec<String>> {
+    todo!()
+}
+
+fn gen_table_sql_for_changes(
+    _stmt: &NodeEnum,
+    _v1: Column,
+    _v2: Column,
+) -> anyhow::Result<Vec<String>> {
     todo!()
 }
