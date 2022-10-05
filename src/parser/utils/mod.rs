@@ -2,10 +2,8 @@ mod macros;
 pub mod parsec;
 
 use super::ConstraintInfo;
-use anyhow::Result;
 use itertools::Itertools;
-use pg_query::{protobuf::ConstrType, Node, NodeEnum};
-use serde::Deserialize;
+use pg_query::{Node, NodeEnum};
 
 pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
     match &node.node {
@@ -38,55 +36,4 @@ pub fn drain_where<T, Pred: Fn(&T) -> bool>(source: Vec<T>, pred: Pred) -> (Vec<
         }
     }
     (orig, drained)
-}
-
-#[allow(dead_code)]
-pub fn serialize_node<S>(node: &NodeEnum, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(&node.deparse().unwrap())
-}
-
-#[allow(dead_code)]
-pub fn deserialize_node<'de, D>(deserializer: D) -> Result<NodeEnum, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    Ok(pg_query::parse(&s).unwrap().protobuf.nodes()[0].0.to_enum())
-}
-
-#[allow(dead_code)]
-pub fn serialize_constr_type<S>(con_type: &ConstrType, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(&format!("{:?}", con_type.clone()))
-}
-
-#[allow(dead_code)]
-pub fn deserialize_constr_type<'de, D>(deserializer: D) -> Result<ConstrType, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    let v = match s.as_str() {
-        "ConstrNull" => ConstrType::ConstrNull,
-        "ConstrNotNull" => ConstrType::ConstrNotnull,
-        "ConstrDefault" => ConstrType::ConstrDefault,
-        "ConstrIdentity" => ConstrType::ConstrIdentity,
-        "ConstrGenerated" => ConstrType::ConstrGenerated,
-        "ConstrCheck" => ConstrType::ConstrCheck,
-        "ConstrPrimary" => ConstrType::ConstrPrimary,
-        "ConstrUnique" => ConstrType::ConstrUnique,
-        "ConstrExclusion" => ConstrType::ConstrExclusion,
-        "ConstrForeign" => ConstrType::ConstrForeign,
-        "ConstrAttrDeferrable" => ConstrType::ConstrAttrDeferrable,
-        "ConstrAttrNotDeferrable" => ConstrType::ConstrAttrNotDeferrable,
-        "ConstrAttrDeferred" => ConstrType::ConstrAttrDeferred,
-        "ConstrAttrImmediate" => ConstrType::ConstrAttrImmediate,
-        _ => ConstrType::Undefined,
-    };
-    Ok(v)
 }
