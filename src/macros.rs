@@ -15,10 +15,3 @@ macro_rules! map_insert_relation {
             .insert($item.id.name.clone(), $item);
     };
 }
-
-#[macro_export]
-macro_rules! map_insert {
-    ($map:expr, $item:ident) => {
-        $map.insert($item.id.clone(), $item);
-    };
-}

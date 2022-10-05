@@ -2,19 +2,37 @@ use super::{
     utils::{get_node_str, get_type_name},
     Function, FunctionArg, SchemaId,
 };
-use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDiff};
+use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
 use anyhow::Context;
 use itertools::Itertools;
 use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
 use std::str::FromStr;
 
-impl DiffItem for Function {
+impl NodeItem for Function {
+    type Inner = CreateFunctionStmt;
     fn id(&self) -> String {
         self.id.to_string()
     }
 
     fn node(&self) -> &NodeEnum {
         &self.node
+    }
+
+    fn inner(&self) -> anyhow::Result<&Self::Inner> {
+        match &self.node {
+            NodeEnum::CreateFunctionStmt(stmt) => Ok(stmt),
+            _ => anyhow::bail!("not a create function statement"),
+        }
+    }
+
+    fn revert(&self) -> anyhow::Result<NodeEnum> {
+        let sql = format!("DROP FUNCTION {}", self.id);
+        let parsed = pg_query::parse(&sql)?;
+        let node = parsed.protobuf.nodes()[0].0;
+        match node {
+            NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
+            _ => anyhow::bail!("not a drop statement"),
+        }
     }
 }
 
@@ -55,7 +73,7 @@ impl MigrationPlanner for NodeDiff<Function> {
 
     fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            let sql = format!("DROP FUNCTION {};", old.id);
+            let sql = old.revert()?.deparse()?;
             Ok(vec![sql])
         } else {
             Ok(vec![])
@@ -64,7 +82,7 @@ impl MigrationPlanner for NodeDiff<Function> {
 
     fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            let sql = format!("{};", new.node.deparse()?);
+            let sql = new.node.deparse()?;
             Ok(vec![sql])
         } else {
             Ok(vec![])
@@ -105,7 +123,7 @@ mod tests {
 
     #[test]
     fn valid_create_function_sql_should_parse() {
-        let f1 = "CREATE FUNCTION test(name text, value integer) RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$;";
+        let f1 = "CREATE FUNCTION test(name text, value integer) RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$";
         let fun: Function = f1.parse().unwrap();
         assert_eq!(
             fun.id,
@@ -129,8 +147,8 @@ mod tests {
 
     #[test]
     fn unchanged_function_should_return_none() {
-        let f1 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$;";
-        let f2 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$;";
+        let f1 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$";
+        let f2 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$";
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap();
@@ -139,8 +157,8 @@ mod tests {
 
     #[test]
     fn function_add_new_args_should_be_treated_as_new_function() {
-        let f1 = "CREATE FUNCTION test() RETURNS text LANGUAGE SQL stable AS $$ select 1 $$;";
-        let f2 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$;";
+        let f1 = "CREATE FUNCTION test() RETURNS text LANGUAGE SQL stable AS $$ select 1 $$";
+        let f2 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$";
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap_err();
@@ -152,27 +170,27 @@ mod tests {
 
     #[test]
     fn function_change_arg_name_should_generate_migration() {
-        let f1 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$;";
-        let f2 = "CREATE FUNCTION test(name2 text) RETURNS text LANGUAGE sql STABLE AS $$ select name2 $$;";
+        let f1 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$";
+        let f2 = "CREATE FUNCTION test(name2 text) RETURNS text LANGUAGE sql STABLE AS $$ select name2 $$";
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
-        assert_eq!(plan[0], "DROP FUNCTION public.test(text);");
+        assert_eq!(plan[0], "DROP FUNCTION public.test(text)");
         assert_eq!(plan[1], f2);
     }
 
     #[test]
     fn function_change_content_should_generate_migration() {
-        let f1 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$;";
-        let f2 = "CREATE FUNCTION test(name2 text) RETURNS text LANGUAGE sql IMMUTABLE AS $$ select name2 $$;";
+        let f1 = "CREATE FUNCTION test(name1 text) RETURNS text LANGUAGE sql STABLE AS $$ select name1 $$";
+        let f2 = "CREATE FUNCTION test(name2 text) RETURNS text LANGUAGE sql IMMUTABLE AS $$ select name2 $$";
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
-        assert_eq!(plan[0], "DROP FUNCTION public.test(text);");
+        assert_eq!(plan[0], "DROP FUNCTION public.test(text)");
         assert_eq!(plan[1], f2);
     }
 }

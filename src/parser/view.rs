@@ -1,19 +1,34 @@
 use super::{SchemaId, View};
-use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDiff};
+use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
 use anyhow::Context;
-use pg_query::{
-    protobuf::{CreateTableAsStmt, ViewStmt},
-    NodeEnum, NodeRef,
-};
+use pg_query::{protobuf::ViewStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
 
-impl DiffItem for View {
+impl NodeItem for View {
+    type Inner = ViewStmt;
     fn id(&self) -> String {
         self.id.to_string()
     }
 
     fn node(&self) -> &NodeEnum {
         &self.node
+    }
+
+    fn inner(&self) -> anyhow::Result<&Self::Inner> {
+        match &self.node {
+            NodeEnum::ViewStmt(stmt) => Ok(stmt),
+            _ => anyhow::bail!("not a create view statement"),
+        }
+    }
+
+    fn revert(&self) -> anyhow::Result<NodeEnum> {
+        let sql = format!("DROP VIEW {}", self.id);
+        let parsed = pg_query::parse(&sql)?;
+        let node = parsed.protobuf.nodes()[0].0;
+        match node {
+            NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
+            _ => anyhow::bail!("not a drop index statement"),
+        }
     }
 }
 
@@ -25,7 +40,6 @@ impl FromStr for View {
         let node = parsed.protobuf.nodes()[0].0;
         match node {
             NodeRef::ViewStmt(stmt) => Self::try_from(stmt),
-            NodeRef::CreateTableAsStmt(stmt) => Self::try_from(stmt),
             _ => anyhow::bail!("not a view: {}", s),
         }
     }
@@ -40,31 +54,13 @@ impl TryFrom<&ViewStmt> for View {
     }
 }
 
-impl TryFrom<&CreateTableAsStmt> for View {
-    type Error = anyhow::Error;
-    fn try_from(stmt: &CreateTableAsStmt) -> Result<Self, Self::Error> {
-        let id = get_mview_id(stmt);
-        let node = NodeEnum::CreateTableAsStmt(Box::new(stmt.clone()));
-        Ok(Self { id, node })
-    }
-}
-
 impl MigrationPlanner for NodeDiff<View> {
     type Migration = String;
 
     fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            match old.node() {
-                NodeEnum::ViewStmt(_) => {
-                    let sql = format!("DROP VIEW {};", old.id);
-                    Ok(vec![sql])
-                }
-                NodeEnum::CreateTableAsStmt(_) => {
-                    let sql = format!("DROP MATERIALIZED VIEW {};", old.id);
-                    Ok(vec![sql])
-                }
-                _ => anyhow::bail!("not a view or materialized view"),
-            }
+            let sql = old.revert()?.deparse()?;
+            Ok(vec![sql])
         } else {
             Ok(vec![])
         }
@@ -72,7 +68,7 @@ impl MigrationPlanner for NodeDiff<View> {
 
     fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            let sql = format!("{};", new.node.deparse()?);
+            let sql = new.node.deparse()?;
             Ok(vec![sql])
         } else {
             Ok(vec![])
@@ -89,56 +85,28 @@ fn get_view_id(stmt: &ViewStmt) -> SchemaId {
     stmt.view.as_ref().unwrap().into()
 }
 
-fn get_mview_id(stmt: &CreateTableAsStmt) -> SchemaId {
-    assert!(stmt.into.is_some());
-    let into = stmt.into.as_ref().unwrap();
-    assert!(into.rel.is_some());
-    into.rel.as_ref().unwrap().into()
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::Differ;
-
     use super::*;
+    use crate::Differ;
 
     #[test]
     fn view_should_parse() {
-        let sql = "CREATE VIEW foo AS SELECT 1;";
+        let sql = "CREATE VIEW foo AS SELECT 1";
         let view: View = sql.parse().unwrap();
         assert_eq!(view.id.to_string(), "public.foo");
     }
 
     #[test]
-    fn mview_should_parse() {
-        let sql = "CREATE MATERIALIZED VIEW foo.bar AS SELECT 1;";
-        let view: View = sql.parse().unwrap();
-        assert_eq!(view.id.to_string(), "foo.bar");
-    }
-
-    #[test]
     fn test_view_migration() {
-        let sql1 = "CREATE VIEW foo AS SELECT 1;";
-        let sql2 = "CREATE VIEW foo AS SELECT 2;";
+        let sql1 = "CREATE VIEW foo AS SELECT 1";
+        let sql2 = "CREATE VIEW foo AS SELECT 2";
         let old: View = sql1.parse().unwrap();
         let new: View = sql2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
         let migrations = diff.plan().unwrap();
         assert_eq!(migrations.len(), 2);
-        assert_eq!(migrations[0], "DROP VIEW public.foo;");
-        assert_eq!(migrations[1], "CREATE VIEW foo AS SELECT 2;");
-    }
-
-    #[test]
-    fn test_mview_migration() {
-        let sql1 = "CREATE MATERIALIZED VIEW foo AS SELECT 1;";
-        let sql2 = "CREATE MATERIALIZED VIEW foo AS SELECT 2;";
-        let old: View = sql1.parse().unwrap();
-        let new: View = sql2.parse().unwrap();
-        let diff = old.diff(&new).unwrap().unwrap();
-        let migrations = diff.plan().unwrap();
-        assert_eq!(migrations.len(), 2);
-        assert_eq!(migrations[0], "DROP MATERIALIZED VIEW public.foo;");
-        assert_eq!(migrations[1], "CREATE MATERIALIZED VIEW foo AS SELECT 2;");
+        assert_eq!(migrations[0], "DROP VIEW public.foo");
+        assert_eq!(migrations[1], "CREATE VIEW foo AS SELECT 2");
     }
 }

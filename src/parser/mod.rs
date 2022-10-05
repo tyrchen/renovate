@@ -1,5 +1,5 @@
 mod function;
-mod index;
+mod mview;
 mod privilege;
 mod sequence;
 mod table;
@@ -34,6 +34,7 @@ pub struct DatabaseSchema {
     pub types: BTreeMap<String, BTreeMap<String, DataType>>,
     pub tables: BTreeMap<String, BTreeMap<String, Table>>,
     pub views: BTreeMap<String, BTreeMap<String, View>>,
+    pub mviews: BTreeMap<String, BTreeMap<String, MatView>>,
     pub functions: BTreeMap<String, BTreeMap<String, Function>>,
 
     // database level objects
@@ -67,7 +68,7 @@ pub struct Schema {
 #[derive(Derivative, Clone)]
 #[derivative(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Trigger {
-    pub id: String,
+    pub id: RelationId,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
 }
@@ -87,6 +88,8 @@ pub struct DataType {
 pub struct Table {
     pub id: SchemaId,
     pub columns: BTreeMap<String, Column>,
+    pub constraints: BTreeSet<ConstraintInfo>,
+
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
 }
@@ -95,6 +98,15 @@ pub struct Table {
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct View {
+    pub id: SchemaId,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
+}
+
+/// Materialized View defined in the schema
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
+pub struct MatView {
     pub id: SchemaId,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
@@ -123,8 +135,8 @@ pub struct Column {
     pub name: String,
     pub type_name: String,
     pub nullable: bool,
-    pub default: Option<String>,
-    pub constraints: Vec<ConstraintInfo>,
+    // pub default: Option<String>,
+    pub constraints: BTreeSet<ConstraintInfo>,
 }
 
 #[derive(Derivative, Debug, Clone)]

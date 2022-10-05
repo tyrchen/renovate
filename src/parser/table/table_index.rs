@@ -1,16 +1,36 @@
-use super::{RelationId, TableIndex};
-use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDiff};
+use crate::{
+    parser::{RelationId, TableIndex},
+    MigrationPlanner, MigrationResult, NodeDiff, NodeItem,
+};
 use anyhow::Context;
 use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
 
-impl DiffItem for TableIndex {
+impl NodeItem for TableIndex {
+    type Inner = IndexStmt;
     fn id(&self) -> String {
         self.id.name.clone()
     }
 
     fn node(&self) -> &NodeEnum {
         &self.node
+    }
+
+    fn inner(&self) -> anyhow::Result<&Self::Inner> {
+        match &self.node {
+            NodeEnum::IndexStmt(stmt) => Ok(stmt),
+            _ => anyhow::bail!("not a create index statement"),
+        }
+    }
+
+    fn revert(&self) -> anyhow::Result<NodeEnum> {
+        let sql = format!("DROP INDEX {}", self.id.name);
+        let parsed = pg_query::parse(&sql)?;
+        let node = parsed.protobuf.nodes()[0].0;
+        match node {
+            NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
+            _ => anyhow::bail!("not a drop index statement"),
+        }
     }
 }
 
@@ -41,7 +61,7 @@ impl MigrationPlanner for NodeDiff<TableIndex> {
 
     fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            let sql = format!("DROP INDEX {};", old.id.name);
+            let sql = old.revert()?.deparse()?;
             Ok(vec![sql])
         } else {
             Ok(vec![])
@@ -50,7 +70,7 @@ impl MigrationPlanner for NodeDiff<TableIndex> {
 
     fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            let sql = format!("{};", new.node.deparse()?);
+            let sql = new.node.deparse()?;
             Ok(vec![sql])
         } else {
             Ok(vec![])
@@ -77,7 +97,7 @@ mod tests {
 
     #[test]
     fn index_should_parse() {
-        let sql = "CREATE INDEX foo ON bar (baz);";
+        let sql = "CREATE INDEX foo ON bar (baz)";
         let index: TableIndex = sql.parse().unwrap();
         assert_eq!(index.id.name, "foo");
         assert_eq!(index.id.schema_id.schema, "public");
@@ -86,8 +106,8 @@ mod tests {
 
     #[test]
     fn unchanged_index_should_return_none() {
-        let sql1 = "CREATE INDEX foo ON bar (baz);";
-        let sql2 = "CREATE INDEX foo ON bar (baz);";
+        let sql1 = "CREATE INDEX foo ON bar (baz)";
+        let sql2 = "CREATE INDEX foo ON bar (baz)";
         let old: TableIndex = sql1.parse().unwrap();
         let new: TableIndex = sql2.parse().unwrap();
         let diff = old.diff(&new).unwrap();
@@ -96,13 +116,13 @@ mod tests {
 
     #[test]
     fn changed_index_should_generate_migration() {
-        let sql1 = "CREATE INDEX foo ON bar (baz);";
-        let sql2 = "CREATE INDEX foo ON bar (ooo);";
+        let sql1 = "CREATE INDEX foo ON bar (baz)";
+        let sql2 = "CREATE INDEX foo ON bar (ooo)";
         let old: TableIndex = sql1.parse().unwrap();
         let new: TableIndex = sql2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
         let migrations = diff.plan().unwrap();
-        assert_eq!(migrations[0], "DROP INDEX foo;");
-        assert_eq!(migrations[1], "CREATE INDEX foo ON bar USING btree (ooo);");
+        assert_eq!(migrations[0], "DROP INDEX foo");
+        assert_eq!(migrations[1], "CREATE INDEX foo ON bar USING btree (ooo)");
     }
 }

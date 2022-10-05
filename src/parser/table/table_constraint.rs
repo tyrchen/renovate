@@ -1,11 +1,44 @@
-use crate::parser::{
-    AlterTable, AlterTableAction, ConstraintInfo, RelationId, SchemaId, TableConstraint,
+use crate::{
+    parser::{AlterTable, AlterTableAction, ConstraintInfo, RelationId, SchemaId, TableConstraint},
+    MigrationPlanner, MigrationResult, NodeDiff, NodeItem,
 };
 use pg_query::{
-    protobuf::{ConstrType, Constraint as PgConstraint},
+    protobuf::{AlterTableStmt, ConstrType, Constraint as PgConstraint},
     NodeEnum, NodeRef,
 };
 use std::str::FromStr;
+
+impl NodeItem for TableConstraint {
+    type Inner = AlterTableStmt;
+
+    fn id(&self) -> String {
+        self.id.name.clone()
+    }
+
+    fn node(&self) -> &NodeEnum {
+        &self.node
+    }
+
+    fn inner(&self) -> anyhow::Result<&Self::Inner> {
+        match &self.node {
+            NodeEnum::AlterTableStmt(stmt) => Ok(stmt),
+            _ => anyhow::bail!("not a alter table statement"),
+        }
+    }
+
+    fn revert(&self) -> anyhow::Result<NodeEnum> {
+        let sql = format!(
+            "ALTER TABLE ONLY {} DROP CONSTRAINT {}",
+            self.id.schema_id, self.id.name
+        );
+        let parsed = pg_query::parse(&sql)?;
+        let node = parsed.protobuf.nodes()[0].0;
+        match node {
+            NodeRef::AlterTableStmt(stmt) => Ok(NodeEnum::AlterTableStmt(stmt.clone())),
+            _ => anyhow::bail!("not a alter table drop constraint statement"),
+        }
+    }
+}
 
 impl FromStr for TableConstraint {
     type Err = anyhow::Error;
@@ -30,6 +63,32 @@ impl TryFrom<AlterTable> for TableConstraint {
     }
 }
 
+impl MigrationPlanner for NodeDiff<TableConstraint> {
+    type Migration = String;
+
+    fn drop(&self) -> MigrationResult<Self::Migration> {
+        if let Some(old) = &self.old {
+            let sql = old.revert()?.deparse()?;
+            Ok(vec![sql])
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    fn create(&self) -> MigrationResult<Self::Migration> {
+        if let Some(new) = &self.new {
+            let sql = new.node.deparse()?;
+            Ok(vec![sql])
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    fn alter(&self) -> MigrationResult<Self::Migration> {
+        Ok(vec![])
+    }
+}
+
 impl TableConstraint {
     fn new(id: SchemaId, info: ConstraintInfo, node: NodeEnum) -> Self {
         let id = RelationId::new_with(id, info.name.clone());
@@ -48,5 +107,52 @@ impl TryFrom<&PgConstraint> for ConstraintInfo {
             con_type,
             node,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Differ;
+
+    use super::*;
+
+    #[test]
+    fn alter_table_constraint_should_parse() {
+        let sql = "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id)";
+        let parsed = TableConstraint::from_str(sql).unwrap();
+        assert_eq!(parsed.id.name, "users_pkey");
+        assert_eq!(parsed.id.schema_id.to_string(), "public.users");
+        assert_eq!(parsed.info.name, "users_pkey");
+        assert_eq!(parsed.info.con_type, ConstrType::ConstrPrimary);
+    }
+
+    #[test]
+    fn alter_table_constraint_should_revert() {
+        let sql = "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id)";
+        let parsed = TableConstraint::from_str(sql).unwrap();
+        let reverted = parsed.revert().unwrap().deparse().unwrap();
+        assert_eq!(
+            reverted,
+            "ALTER TABLE ONLY public.users DROP CONSTRAINT users_pkey"
+        );
+    }
+
+    #[test]
+    fn alter_table_constraint_migration_should_drop_and_create() {
+        let sql1 = "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id)";
+        let sql2 = "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id, name)";
+        let old: TableConstraint = sql1.parse().unwrap();
+        let new: TableConstraint = sql2.parse().unwrap();
+        let diff = Differ::diff(&old, &new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 2);
+        assert_eq!(
+            plan[0],
+            "ALTER TABLE ONLY public.users DROP CONSTRAINT users_pkey"
+        );
+        assert_eq!(
+            plan[1],
+            "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id, name)"
+        );
     }
 }

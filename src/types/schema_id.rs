@@ -26,18 +26,21 @@ impl SchemaId {
     }
 }
 
-impl From<Option<&RangeVar>> for SchemaId {
-    fn from(v: Option<&RangeVar>) -> Self {
-        assert!(v.is_some());
-        let v = v.unwrap();
-
-        let schema = if v.schemaname.is_empty() {
+impl From<&RangeVar> for SchemaId {
+    fn from(v: &RangeVar) -> Self {
+        let schema_name = if v.schemaname.is_empty() {
             "public"
         } else {
             v.schemaname.as_str()
         };
+        Self::new(schema_name, &v.relname)
+    }
+}
 
-        Self::new(schema, &v.relname)
+impl From<Option<&RangeVar>> for SchemaId {
+    fn from(v: Option<&RangeVar>) -> Self {
+        assert!(v.is_some());
+        v.unwrap().into()
     }
 }
 

@@ -1,11 +1,13 @@
 mod single_priv;
 
 use super::{Privilege, SinglePriv};
-use crate::{parser::SchemaId, DiffItem, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff};
+use crate::{
+    parser::SchemaId, DiffItem, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem,
+};
 use anyhow::Context;
 use pg_query::{
     protobuf::{GrantStmt, GrantTargetType, ObjectType},
-    Node, NodeEnum, NodeRef,
+    NodeEnum, NodeRef,
 };
 use std::{collections::BTreeMap, str::FromStr};
 
@@ -16,6 +18,31 @@ impl DiffItem for Privilege {
 
     fn node(&self) -> &NodeEnum {
         &self.node
+    }
+}
+
+impl NodeItem for Privilege {
+    type Inner = GrantStmt;
+
+    fn id(&self) -> String {
+        format!("{}:{}", self.id, self.grantee)
+    }
+
+    fn node(&self) -> &NodeEnum {
+        &self.node
+    }
+
+    fn inner(&self) -> anyhow::Result<&Self::Inner> {
+        match &self.node {
+            NodeEnum::GrantStmt(stmt) => Ok(stmt),
+            _ => anyhow::bail!("not a grant statement"),
+        }
+    }
+
+    fn revert(&self) -> anyhow::Result<NodeEnum> {
+        let mut stmt = self.inner()?.clone();
+        stmt.is_grant = !stmt.is_grant;
+        Ok(NodeEnum::GrantStmt(stmt))
     }
 }
 
@@ -35,6 +62,7 @@ impl FromStr for Privilege {
 
 impl TryFrom<&GrantStmt> for Privilege {
     type Error = anyhow::Error;
+
     fn try_from(stmt: &GrantStmt) -> Result<Self, Self::Error> {
         let target_type = get_target_type(stmt);
         let object_type = get_object_type(stmt)?;
@@ -59,8 +87,7 @@ impl MigrationPlanner for NodeDiff<Privilege> {
 
     fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            let sqls = gen_grant_sql(&old.node, None, !old.grant)?;
-
+            let sqls = vec![old.revert()?.deparse()?];
             Ok(sqls)
         } else {
             Ok(vec![])
@@ -69,7 +96,7 @@ impl MigrationPlanner for NodeDiff<Privilege> {
 
     fn create(&self) -> MigrationResult<Self::Migration> {
         if let Some(new) = &self.new {
-            let sqls = gen_grant_sql(&new.node, None, new.grant)?;
+            let sqls = vec![new.node.deparse()?];
             Ok(sqls)
         } else {
             Ok(vec![])
@@ -88,44 +115,12 @@ impl MigrationPlanner for NodeDiff<Privilege> {
                     // we can't alter these privilege changes, so we need to drop and recreate it
                     return Ok(vec![]);
                 }
-                let delta = NodeDelta::calculate(&old.privileges, &new.privileges);
-                delta.plan(&old.node, gen_grant_sql, gen_grant_sql_for_changed)
+                let delta = NodeDelta::create(&old.privileges, &new.privileges);
+                delta.plan(old)
             }
             _ => Ok(vec![]),
         }
     }
-}
-
-fn gen_grant_sql(
-    node: &NodeEnum,
-    sp: Option<SinglePriv>,
-    grant: bool,
-) -> anyhow::Result<Vec<String>> {
-    let mut stmt = match node {
-        NodeEnum::GrantStmt(stmt) => stmt.clone(),
-        _ => anyhow::bail!("not a grant statement"),
-    };
-    stmt.is_grant = grant;
-    if let Some(sp) = sp {
-        stmt.privileges = vec![Node {
-            node: Some(NodeEnum::AccessPriv(sp.into())),
-        }];
-    }
-    let sql = format!("{};", NodeEnum::GrantStmt(stmt).deparse()?);
-    Ok(vec![sql])
-}
-
-fn gen_grant_sql_for_changed(
-    node: &NodeEnum,
-    v1: SinglePriv,
-    v2: SinglePriv,
-) -> anyhow::Result<Vec<String>> {
-    let mut migrations = vec![];
-    let sql = gen_grant_sql(node, Some(v1), false)?;
-    migrations.extend(sql);
-    let sql = gen_grant_sql(node, Some(v2), true)?;
-    migrations.extend(sql);
-    Ok(migrations)
 }
 
 fn get_target_type(stmt: &GrantStmt) -> GrantTargetType {
@@ -229,11 +224,8 @@ mod tests {
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
-        assert_eq!(
-            plan[0],
-            "REVOKE select (id, name) ON public.test FROM test;"
-        );
-        assert_eq!(plan[1], "GRANT ALL ON public.test TO test;");
+        assert_eq!(plan[0], "REVOKE select (id, name) ON public.test FROM test");
+        assert_eq!(plan[1], "GRANT ALL ON public.test TO test");
     }
 
     #[test]
@@ -259,7 +251,7 @@ mod tests {
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 1);
-        assert_eq!(plan[0], "GRANT update (name) ON public.test TO test;");
+        assert_eq!(plan[0], "GRANT update (name) ON public.test TO test");
     }
 
     #[test]
@@ -271,7 +263,7 @@ mod tests {
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 1);
-        assert_eq!(plan[0], "REVOKE delete (name) ON public.test FROM test;");
+        assert_eq!(plan[0], "REVOKE delete (name) ON public.test FROM test");
     }
 
     #[test]
@@ -283,12 +275,9 @@ mod tests {
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 4);
-        assert_eq!(plan[0], "REVOKE delete (name) ON public.test FROM test;");
-        assert_eq!(plan[1], "GRANT update (name) ON public.test TO test;");
-        assert_eq!(
-            plan[2],
-            "REVOKE select (id, name) ON public.test FROM test;"
-        );
-        assert_eq!(plan[3], "GRANT select (id, temp) ON public.test TO test;");
+        assert_eq!(plan[0], "REVOKE delete (name) ON public.test FROM test");
+        assert_eq!(plan[1], "GRANT update (name) ON public.test TO test");
+        assert_eq!(plan[2], "REVOKE select (id, name) ON public.test FROM test");
+        assert_eq!(plan[3], "GRANT select (id, temp) ON public.test TO test");
     }
 }

@@ -1,12 +1,11 @@
-use crate::NodeDelta;
-use pg_query::NodeEnum;
+use crate::{DeltaItem, NodeDelta};
 use std::collections::{BTreeMap, BTreeSet};
 
-impl<T> NodeDelta<T>
+impl<T, Item> NodeDelta<T>
 where
-    T: Clone + Ord,
+    T: Clone + Ord + DeltaItem<SqlNode = Item>,
 {
-    pub fn calculate(old: &BTreeMap<String, T>, new: &BTreeMap<String, T>) -> NodeDelta<T> {
+    pub fn create(old: &BTreeMap<String, T>, new: &BTreeMap<String, T>) -> NodeDelta<T> {
         let mut delta = NodeDelta::default();
 
         let old_keys: BTreeSet<_> = old.keys().collect();
@@ -34,25 +33,20 @@ where
         delta
     }
 
-    pub fn plan(
-        self,
-        node: &NodeEnum,
-        gen_sql: fn(&NodeEnum, Option<T>, bool) -> anyhow::Result<Vec<String>>,
-        gen_sql_for_changed: fn(&NodeEnum, T, T) -> anyhow::Result<Vec<String>>,
-    ) -> anyhow::Result<Vec<String>> {
+    pub fn plan(self, item: &Item) -> anyhow::Result<Vec<String>> {
         let mut migrations = Vec::new();
         for removed in self.removed {
-            let sqls = gen_sql(node, Some(removed), false)?;
+            let sqls = removed.drop(item)?;
             migrations.extend(sqls);
         }
 
         for added in self.added {
-            let sqls = gen_sql(node, Some(added), true)?;
+            let sqls = added.create(item)?;
             migrations.extend(sqls);
         }
 
         for (v1, v2) in self.changed {
-            let sqls = gen_sql_for_changed(node, v1, v2)?;
+            let sqls = v1.alter(item, v2)?;
             migrations.extend(sqls);
         }
         Ok(migrations)

@@ -1,5 +1,8 @@
 use super::SinglePriv;
-use crate::parser::utils::parsec::parse_single_priv;
+use crate::{
+    parser::{utils::parsec::parse_single_priv, Privilege},
+    DeltaItem, NodeItem,
+};
 use pg_query::{protobuf::AccessPriv, Node, NodeEnum};
 use std::{collections::BTreeSet, str::FromStr};
 
@@ -25,6 +28,37 @@ impl From<SinglePriv> for AccessPriv {
             priv_name: p.name,
             cols,
         }
+    }
+}
+
+impl SinglePriv {
+    fn generate_change(self, item: &Privilege, is_grant: bool) -> anyhow::Result<NodeEnum> {
+        let mut stmt = item.inner()?.clone();
+        stmt.is_grant = is_grant;
+        stmt.privileges = vec![self.into()];
+        Ok(NodeEnum::GrantStmt(stmt))
+    }
+}
+
+impl DeltaItem for SinglePriv {
+    type SqlNode = Privilege;
+    fn drop(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
+        let node = self.generate_change(item, false)?;
+        Ok(vec![node.deparse()?])
+    }
+
+    fn create(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
+        let node = self.generate_change(item, true)?;
+        Ok(vec![node.deparse()?])
+    }
+
+    fn alter(self, item: &Self::SqlNode, remote: Self) -> anyhow::Result<Vec<String>> {
+        let mut migrations = vec![];
+        let sql = self.drop(item)?;
+        migrations.extend(sql);
+        let sql = remote.create(item)?;
+        migrations.extend(sql);
+        Ok(migrations)
     }
 }
 

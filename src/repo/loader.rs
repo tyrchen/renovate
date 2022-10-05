@@ -1,8 +1,8 @@
 use crate::{
-    map_insert, map_insert_relation, map_insert_schema,
+    map_insert_relation, map_insert_schema,
     parser::{
-        AlterTable, AlterTableAction, Function, Table, TableConstraint, TableIndex, TableOwner,
-        TableRls, Trigger, View,
+        AlterTable, AlterTableAction, Function, MatView, Table, TableConstraint, TableIndex,
+        TableOwner, TableRls, Trigger, View,
     },
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
@@ -78,8 +78,8 @@ impl SchemaLoader for SqlRepo {
                     map_insert_schema!(data.views, item);
                 }
                 NodeRef::CreateTableAsStmt(mview) => {
-                    let item = View::try_from(mview)?;
-                    map_insert_schema!(data.views, item);
+                    let item = MatView::try_from(mview)?;
+                    map_insert_schema!(data.mviews, item);
                 }
                 NodeRef::CreateFunctionStmt(func) => {
                     let item = Function::try_from(func).with_context(|| {
@@ -90,7 +90,7 @@ impl SchemaLoader for SqlRepo {
                 }
                 NodeRef::CreateTrigStmt(trig) => {
                     let item = Trigger::try_from(trig)?;
-                    map_insert!(data.triggers, item);
+                    data.triggers.insert(item.id.name.clone(), item);
                 }
                 NodeRef::AlterTableStmt(alter) => {
                     let alter_table = AlterTable::try_from(alter)?;

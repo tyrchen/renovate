@@ -1,23 +1,12 @@
 pub mod parsec;
 
-use super::{ConstraintInfo, SchemaId};
+use super::ConstraintInfo;
 use anyhow::Result;
 use pg_query::{
-    protobuf::{ConstrType, RangeVar, TypeName},
+    protobuf::{ConstrType, TypeName},
     Node, NodeEnum,
 };
 use serde::Deserialize;
-
-impl From<&RangeVar> for SchemaId {
-    fn from(v: &RangeVar) -> Self {
-        let schema_name = if v.schemaname.is_empty() {
-            "public"
-        } else {
-            v.schemaname.as_str()
-        };
-        Self::new(schema_name, &v.relname)
-    }
-}
 
 pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
     match &node.node {
@@ -41,6 +30,21 @@ pub fn get_type_name(data_type: Option<&TypeName>) -> Option<String> {
             .collect::<Vec<_>>()
             .join(".")
     })
+}
+
+#[allow(dead_code)]
+pub fn drain_where<T, Pred: Fn(&T) -> bool>(source: Vec<T>, pred: Pred) -> (Vec<T>, Vec<T>) {
+    let mut orig: Vec<T> = Vec::with_capacity(source.len());
+    let mut drained: Vec<T> = Vec::new();
+
+    for v in source.into_iter() {
+        if pred(&v) {
+            drained.push(v);
+        } else {
+            orig.push(v);
+        }
+    }
+    (orig, drained)
 }
 
 #[allow(dead_code)]
