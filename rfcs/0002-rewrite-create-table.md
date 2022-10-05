@@ -40,6 +40,8 @@ ALTER TABLE ONLY public.foo ADD CONSTRAINT foo_pkey PRIMARY KEY (id);
 
 ## Motivation
 
+Better compatibility with `pg_dump`.
+
 ## Guide-level explanation
 
 ## Reference-level explanation
