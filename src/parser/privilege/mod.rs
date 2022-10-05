@@ -1,25 +1,13 @@
 mod single_priv;
 
 use super::{Privilege, SinglePriv};
-use crate::{
-    parser::SchemaId, DiffItem, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem,
-};
+use crate::{parser::SchemaId, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
 use anyhow::Context;
 use pg_query::{
     protobuf::{GrantStmt, GrantTargetType, ObjectType},
     NodeEnum, NodeRef,
 };
 use std::{collections::BTreeMap, str::FromStr};
-
-impl DiffItem for Privilege {
-    fn id(&self) -> String {
-        format!("{}:{}", self.id, self.grantee)
-    }
-
-    fn node(&self) -> &NodeEnum {
-        &self.node
-    }
-}
 
 impl NodeItem for Privilege {
     type Inner = GrantStmt;

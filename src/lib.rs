@@ -28,12 +28,7 @@ pub trait SqlSaver {
     async fn save(&self, config: &RenovateOutputConfig) -> Result<()>;
 }
 
-/// Object for SqlDiff<T> must satisfy DiffItem trait
-pub trait DiffItem {
-    fn id(&self) -> String;
-    fn node(&self) -> &NodeEnum;
-}
-
+/// Object for Differ<T> must satisfy NodeItem trait
 pub trait NodeItem: ToString {
     type Inner;
     /// Unique id for the object

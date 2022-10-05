@@ -5,7 +5,7 @@ mod table_index;
 mod table_owner;
 mod table_rls;
 
-use crate::{DiffItem, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
+use crate::{MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
 
 use super::{Column, ConstraintInfo, SchemaId, Table};
 use anyhow::Context;
@@ -14,16 +14,6 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
 };
-
-impl DiffItem for Table {
-    fn id(&self) -> String {
-        self.id.to_string()
-    }
-
-    fn node(&self) -> &NodeEnum {
-        &self.node
-    }
-}
 
 impl NodeItem for Table {
     type Inner = CreateStmt;
