@@ -2,9 +2,7 @@ use crate::{
     parser::{RelationId, TableIndex},
     NodeItem,
 };
-use anyhow::Context;
 use pg_query::{protobuf::IndexStmt, NodeEnum, NodeRef};
-use std::str::FromStr;
 
 impl NodeItem for TableIndex {
     type Inner = IndexStmt;
@@ -30,19 +28,6 @@ impl NodeItem for TableIndex {
         match node {
             NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
             _ => anyhow::bail!("not a drop index statement"),
-        }
-    }
-}
-
-impl FromStr for TableIndex {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s).with_context(|| format!("Failed to parse index: {}", s))?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::IndexStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not an index: {}", s),
         }
     }
 }

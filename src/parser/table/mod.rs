@@ -5,15 +5,10 @@ mod table_index;
 mod table_owner;
 mod table_rls;
 
-use crate::{MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
-
 use super::{Column, ConstraintInfo, SchemaId, Table};
-use anyhow::Context;
+use crate::{MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
 use pg_query::{protobuf::CreateStmt, NodeEnum, NodeRef};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    str::FromStr,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 impl NodeItem for Table {
     type Inner = CreateStmt;
@@ -40,19 +35,6 @@ impl NodeItem for Table {
         match node {
             NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
             _ => anyhow::bail!("not a drop statement"),
-        }
-    }
-}
-
-impl FromStr for Table {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s).with_context(|| format!("Failed to parse table: {}", s))?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::CreateStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not a table: {}", s),
         }
     }
 }
@@ -135,7 +117,7 @@ mod tests {
     #[test]
     fn test_parse_and_to_string() {
         let sql = "CREATE TABLE foo (id int PRIMARY KEY, name text NOT NULL UNIQUE)";
-        let table = Table::from_str(sql).unwrap();
+        let table: Table = sql.parse().unwrap();
         let sql1 = table.node.deparse().unwrap();
         assert_eq!(sql, sql1);
     }
@@ -144,7 +126,7 @@ mod tests {
     fn test_parse_table() {
         let sql =
             "CREATE TABLE foo (id serial not null primary key, name text default random_name(), CHECK (check_name(name)))";
-        let table = Table::from_str(sql).unwrap();
+        let table: Table = sql.parse().unwrap();
         assert_eq!(table.id.to_string(), "public.foo");
         assert_eq!(table.columns.len(), 2);
         let col = table.columns.get("id").unwrap();

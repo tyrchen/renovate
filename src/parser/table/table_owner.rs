@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     parser::{AlterTable, AlterTableAction, SchemaId, TableOwner},
     NodeItem,
@@ -36,19 +34,6 @@ impl NodeItem for TableOwner {
     }
 }
 
-impl FromStr for TableOwner {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s)?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::AlterTableStmt(stmt) => AlterTable::try_from(stmt)?.try_into(),
-            _ => anyhow::bail!("not a alter table owner to statement: {}", s),
-        }
-    }
-}
-
 impl TryFrom<AlterTable> for TableOwner {
     type Error = anyhow::Error;
     fn try_from(AlterTable { id, action, node }: AlterTable) -> Result<Self, Self::Error> {
@@ -73,7 +58,7 @@ mod tests {
     #[test]
     fn table_owner_to_should_parse() {
         let sql = "ALTER TABLE foo OWNER TO bar";
-        let parsed = TableOwner::from_str(sql).unwrap();
+        let parsed: TableOwner = sql.parse().unwrap();
         assert_eq!(parsed.id.name, "foo");
         assert_eq!(parsed.owner, "bar");
     }
@@ -81,7 +66,7 @@ mod tests {
     #[test]
     fn table_owner_to_should_revert() {
         let sql = "ALTER TABLE foo OWNER TO bar";
-        let parsed = TableOwner::from_str(sql).unwrap();
+        let parsed: TableOwner = sql.parse().unwrap();
         let reverted = parsed.revert().unwrap().deparse().unwrap();
         assert_eq!(reverted, "ALTER TABLE public.foo OWNER TO SESSION_USER");
     }

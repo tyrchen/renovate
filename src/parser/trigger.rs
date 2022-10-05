@@ -1,8 +1,6 @@
 use super::{RelationId, Trigger};
 use crate::NodeItem;
-use anyhow::Context;
 use pg_query::{protobuf::CreateTrigStmt, NodeEnum, NodeRef};
-use std::str::FromStr;
 
 impl NodeItem for Trigger {
     type Inner = CreateTrigStmt;
@@ -29,20 +27,6 @@ impl NodeItem for Trigger {
         match node {
             NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
             _ => anyhow::bail!("not a drop index statement"),
-        }
-    }
-}
-
-impl FromStr for Trigger {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed =
-            pg_query::parse(s).with_context(|| format!("Failed to parse trigger: {}", s))?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::CreateTrigStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not a trigger: {}", s),
         }
     }
 }

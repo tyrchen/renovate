@@ -3,10 +3,8 @@ use super::{
     Function, FunctionArg, SchemaId,
 };
 use crate::NodeItem;
-use anyhow::Context;
 use itertools::Itertools;
 use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
-use std::str::FromStr;
 
 impl NodeItem for Function {
     type Inner = CreateFunctionStmt;
@@ -32,20 +30,6 @@ impl NodeItem for Function {
         match node {
             NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
             _ => anyhow::bail!("not a drop statement"),
-        }
-    }
-}
-
-impl FromStr for Function {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed =
-            pg_query::parse(s).with_context(|| format!("Failed to parse function: {}", s))?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::CreateFunctionStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not a function: {}", s),
         }
     }
 }

@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     parser::{AlterTable, AlterTableAction, SchemaId, TableRls},
     NodeItem,
@@ -36,19 +34,6 @@ impl NodeItem for TableRls {
     }
 }
 
-impl FromStr for TableRls {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s)?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::AlterTableStmt(stmt) => AlterTable::try_from(stmt)?.try_into(),
-            _ => anyhow::bail!("not a alter table RLS statement: {}", s),
-        }
-    }
-}
-
 impl TryFrom<AlterTable> for TableRls {
     type Error = anyhow::Error;
     fn try_from(AlterTable { id, action, node }: AlterTable) -> Result<Self, Self::Error> {
@@ -73,14 +58,14 @@ mod tests {
     #[test]
     fn table_rls_should_parse() {
         let sql = "ALTER TABLE foo ENABLE ROW LEVEL SECURITY";
-        let parsed = TableRls::from_str(sql).unwrap();
+        let parsed: TableRls = sql.parse().unwrap();
         assert_eq!(parsed.id, SchemaId::new("public", "foo"));
     }
 
     #[test]
     fn table_rls_should_revert() {
         let sql = "ALTER TABLE foo ENABLE ROW LEVEL SECURITY";
-        let parsed = TableRls::from_str(sql).unwrap();
+        let parsed: TableRls = sql.parse().unwrap();
         let reverted = parsed.revert().unwrap().deparse().unwrap();
         assert_eq!(
             reverted,

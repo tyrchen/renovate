@@ -1,8 +1,6 @@
 use super::{SchemaId, View};
 use crate::NodeItem;
-use anyhow::Context;
 use pg_query::{protobuf::ViewStmt, NodeEnum, NodeRef};
-use std::str::FromStr;
 
 impl NodeItem for View {
     type Inner = ViewStmt;
@@ -28,19 +26,6 @@ impl NodeItem for View {
         match node {
             NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
             _ => anyhow::bail!("not a drop index statement"),
-        }
-    }
-}
-
-impl FromStr for View {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s).with_context(|| format!("Failed to parse view: {}", s))?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::ViewStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not a view: {}", s),
         }
     }
 }

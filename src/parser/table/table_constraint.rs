@@ -6,7 +6,6 @@ use pg_query::{
     protobuf::{AlterTableStmt, ConstrType, Constraint as PgConstraint},
     NodeEnum, NodeRef,
 };
-use std::str::FromStr;
 
 impl NodeItem for TableConstraint {
     type Inner = AlterTableStmt;
@@ -36,19 +35,6 @@ impl NodeItem for TableConstraint {
         match node {
             NodeRef::AlterTableStmt(stmt) => Ok(NodeEnum::AlterTableStmt(stmt.clone())),
             _ => anyhow::bail!("not a alter table drop constraint statement"),
-        }
-    }
-}
-
-impl FromStr for TableConstraint {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s)?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::AlterTableStmt(stmt) => AlterTable::try_from(stmt)?.try_into(),
-            _ => anyhow::bail!("not a constraint: {}", s),
         }
     }
 }
@@ -92,7 +78,7 @@ mod tests {
     #[test]
     fn alter_table_constraint_should_parse() {
         let sql = "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id)";
-        let parsed = TableConstraint::from_str(sql).unwrap();
+        let parsed: TableConstraint = sql.parse().unwrap();
         assert_eq!(parsed.id.name, "users_pkey");
         assert_eq!(parsed.id.schema_id.to_string(), "public.users");
         assert_eq!(parsed.info.name, "users_pkey");
@@ -102,7 +88,7 @@ mod tests {
     #[test]
     fn alter_table_constraint_should_revert() {
         let sql = "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id)";
-        let parsed = TableConstraint::from_str(sql).unwrap();
+        let parsed: TableConstraint = sql.parse().unwrap();
         let reverted = parsed.revert().unwrap().deparse().unwrap();
         assert_eq!(
             reverted,

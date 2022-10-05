@@ -1,8 +1,6 @@
 use super::{MatView, SchemaId};
 use crate::NodeItem;
-use anyhow::Context;
 use pg_query::{protobuf::CreateTableAsStmt, NodeEnum, NodeRef};
-use std::str::FromStr;
 
 impl NodeItem for MatView {
     type Inner = CreateTableAsStmt;
@@ -29,20 +27,6 @@ impl NodeItem for MatView {
         match node {
             NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
             _ => anyhow::bail!("not a drop index statement"),
-        }
-    }
-}
-
-impl FromStr for MatView {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed = pg_query::parse(s)
-            .with_context(|| format!("Failed to parse materialized view: {}", s))?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::CreateTableAsStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not a materialized view: {}", s),
         }
     }
 }

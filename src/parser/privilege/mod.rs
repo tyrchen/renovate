@@ -2,12 +2,11 @@ mod single_priv;
 
 use super::{Privilege, SinglePriv};
 use crate::{parser::SchemaId, MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
-use anyhow::Context;
 use pg_query::{
     protobuf::{GrantStmt, GrantTargetType, ObjectType},
-    NodeEnum, NodeRef,
+    NodeEnum,
 };
-use std::{collections::BTreeMap, str::FromStr};
+use std::collections::BTreeMap;
 
 impl NodeItem for Privilege {
     type Inner = GrantStmt;
@@ -31,20 +30,6 @@ impl NodeItem for Privilege {
         let mut stmt = self.inner()?.clone();
         stmt.is_grant = !stmt.is_grant;
         Ok(NodeEnum::GrantStmt(stmt))
-    }
-}
-
-impl FromStr for Privilege {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        let parsed =
-            pg_query::parse(s).with_context(|| format!("Failed to parse grant/revoke: {}", s))?;
-        let node = parsed.protobuf.nodes()[0].0;
-        match node {
-            NodeRef::GrantStmt(stmt) => Self::try_from(stmt),
-            _ => anyhow::bail!("not an index: {}", s),
-        }
     }
 }
 
@@ -174,7 +159,7 @@ mod tests {
     #[test]
     fn grant_all_should_parse() {
         let s = "GRANT ALL ON TABLE public.test TO test";
-        let p = Privilege::from_str(s).unwrap();
+        let p: Privilege = s.parse().unwrap();
         assert!(p.grant);
         assert_eq!(p.target_type, GrantTargetType::AclTargetObject);
         assert_eq!(p.object_type, ObjectType::ObjectTable);
@@ -186,7 +171,7 @@ mod tests {
     #[test]
     fn grant_partial_should_parse() {
         let s = "GRANT SELECT(id, name), UPDATE(name) ON TABLE public.test TO test";
-        let p = Privilege::from_str(s).unwrap();
+        let p: Privilege = s.parse().unwrap();
         assert!(p.grant);
         assert_eq!(p.target_type, GrantTargetType::AclTargetObject);
         assert_eq!(p.object_type, ObjectType::ObjectTable);
@@ -207,8 +192,8 @@ mod tests {
     fn grand_diff_change_to_all_should_work() {
         let s1 = "GRANT SELECT(id, name) ON TABLE public.test TO test";
         let s2 = "GRANT ALL ON TABLE public.test TO test";
-        let p1 = Privilege::from_str(s1).unwrap();
-        let p2 = Privilege::from_str(s2).unwrap();
+        let p1: Privilege = s1.parse().unwrap();
+        let p2: Privilege = s2.parse().unwrap();
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
@@ -220,8 +205,8 @@ mod tests {
     fn grand_diff_change_owner_should_work() {
         let s1 = "GRANT SELECT(id, name) ON TABLE public.test TO test";
         let s2 = "GRANT SELECT(id, name) ON TABLE public.test TO test1";
-        let p1 = Privilege::from_str(s1).unwrap();
-        let p2 = Privilege::from_str(s2).unwrap();
+        let p1: Privilege = s1.parse().unwrap();
+        let p2: Privilege = s2.parse().unwrap();
         let diff = p1.diff(&p2).unwrap_err();
 
         assert_eq!(
@@ -234,8 +219,8 @@ mod tests {
     fn grant_diff_create_should_work() {
         let s1 = "GRANT SELECT(id, name) ON TABLE public.test TO test";
         let s2 = "GRANT SELECT(id, name), UPDATE(name) ON TABLE public.test TO test";
-        let p1 = Privilege::from_str(s1).unwrap();
-        let p2 = Privilege::from_str(s2).unwrap();
+        let p1: Privilege = s1.parse().unwrap();
+        let p2: Privilege = s2.parse().unwrap();
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 1);
@@ -246,8 +231,8 @@ mod tests {
     fn grant_diff_drop_should_work() {
         let s1 = "GRANT SELECT(id, name), DELETE(name) ON TABLE public.test TO test";
         let s2 = "GRANT SELECT(id, name) ON TABLE public.test TO test";
-        let p1 = Privilege::from_str(s1).unwrap();
-        let p2 = Privilege::from_str(s2).unwrap();
+        let p1: Privilege = s1.parse().unwrap();
+        let p2: Privilege = s2.parse().unwrap();
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 1);
@@ -258,8 +243,8 @@ mod tests {
     fn grant_diff_alter_should_work() {
         let s1 = "GRANT SELECT(id, name), DELETE(name) ON TABLE public.test TO test";
         let s2 = "GRANT SELECT(id, temp), UPDATE(name) ON TABLE public.test TO test";
-        let p1 = Privilege::from_str(s1).unwrap();
-        let p2 = Privilege::from_str(s2).unwrap();
+        let p1: Privilege = s1.parse().unwrap();
+        let p2: Privilege = s2.parse().unwrap();
         let diff = p1.diff(&p2).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 4);
