@@ -1,3 +1,5 @@
+mod composite_type;
+mod enum_type;
 mod function;
 mod mview;
 mod privilege;
@@ -31,7 +33,8 @@ pub struct DatabaseSchema {
     pub extensions: BTreeMap<String, BTreeMap<String, Extension>>,
 
     // schema level objects
-    pub types: BTreeMap<String, BTreeMap<String, DataType>>,
+    pub composite_types: BTreeMap<String, BTreeMap<String, CompositeType>>,
+    pub enum_types: BTreeMap<String, BTreeMap<String, EnumType>>,
     pub tables: BTreeMap<String, BTreeMap<String, Table>>,
     pub views: BTreeMap<String, BTreeMap<String, View>>,
     pub mviews: BTreeMap<String, BTreeMap<String, MatView>>,
@@ -58,7 +61,7 @@ pub struct DatabaseSchema {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Schema {
     pub name: String,
-    pub types: BTreeMap<String, DataType>,
+    pub types: BTreeMap<String, CompositeType>,
     pub tables: BTreeMap<String, Table>,
     pub views: BTreeMap<String, View>,
     pub functions: BTreeMap<String, Function>,
@@ -73,10 +76,19 @@ pub struct Trigger {
     pub node: NodeEnum,
 }
 
-/// Data type defined in the schema
+/// Composite type defined in the schema
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
-pub struct DataType {
+pub struct CompositeType {
+    pub id: SchemaId,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
+}
+
+/// Enum type defined in the schema
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
+pub struct EnumType {
     pub id: SchemaId,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,

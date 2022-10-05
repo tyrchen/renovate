@@ -40,7 +40,7 @@ impl TryFrom<&CreateFunctionStmt> for Function {
         let args = parse_args(&stmt.parameters);
         let id = parse_id(&stmt.funcname, &args);
 
-        let returns = get_type_name(stmt.return_type.as_ref()).unwrap();
+        let returns = get_type_name(&stmt.return_type.as_ref().unwrap().names);
 
         let node = NodeEnum::CreateFunctionStmt(stmt.clone());
         Ok(Self {
@@ -66,7 +66,7 @@ fn parse_args(args: &[Node]) -> Vec<FunctionArg> {
         .map(|n| match n.node.as_ref() {
             Some(NodeEnum::FunctionParameter(param)) => FunctionArg {
                 name: param.name.clone(),
-                data_type: get_type_name(param.arg_type.as_ref()).unwrap(),
+                data_type: get_type_name(&param.arg_type.as_ref().unwrap().names),
             },
             _ => panic!("not a function parameter"),
         })

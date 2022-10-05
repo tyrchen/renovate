@@ -18,8 +18,12 @@ impl TryFrom<&ColumnDef> for Column {
     fn try_from(column: &ColumnDef) -> Result<Self, Self::Error> {
         let name = column.colname.clone();
 
-        let type_name =
-            get_type_name(column.type_name.as_ref()).ok_or_else(|| anyhow!("no data type"))?;
+        let type_nodes = &column
+            .type_name
+            .as_ref()
+            .ok_or_else(|| anyhow!("no data type"))?
+            .names;
+        let type_name = get_type_name(type_nodes);
         // let type_modifier = get_type_mod(data_type);
 
         let constraints: BTreeSet<_> = column

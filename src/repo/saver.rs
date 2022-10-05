@@ -84,7 +84,7 @@ macro_rules! collect_schema_items {
         for (schema, items) in $source {
             let result = items
                 .into_iter()
-                .map(|(name, ty)| (name.clone(), ty.node.deparse().unwrap()))
+                .map(|(name, ty)| (name.clone(), ty.to_string()))
                 .collect::<BTreeMap<_, _>>();
             dest.insert(schema.clone(), result);
         }
@@ -119,7 +119,7 @@ impl SqlSaver for DatabaseSchema {
 impl TryFrom<&DatabaseSchema> for SchemaSaver {
     type Error = anyhow::Error;
     fn try_from(schema: &DatabaseSchema) -> Result<Self, Self::Error> {
-        let types = collect_schema_items!(&schema.types);
+        let types = collect_schema_items!(&schema.composite_types);
         let tables = collect_schema_items!(&schema.tables);
         let views = collect_schema_items!(&schema.views);
         let functions = collect_schema_items!(&schema.functions);

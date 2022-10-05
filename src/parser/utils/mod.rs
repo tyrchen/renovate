@@ -3,10 +3,8 @@ pub mod parsec;
 
 use super::ConstraintInfo;
 use anyhow::Result;
-use pg_query::{
-    protobuf::{ConstrType, TypeName},
-    Node, NodeEnum,
-};
+use itertools::Itertools;
+use pg_query::{protobuf::ConstrType, Node, NodeEnum};
 use serde::Deserialize;
 
 pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
@@ -23,14 +21,8 @@ pub fn get_node_str(n: &Node) -> Option<&str> {
     }
 }
 
-pub fn get_type_name(data_type: Option<&TypeName>) -> Option<String> {
-    data_type.map(|t| {
-        t.names
-            .iter()
-            .filter_map(get_node_str)
-            .collect::<Vec<_>>()
-            .join(".")
-    })
+pub fn get_type_name(nodes: &[Node]) -> String {
+    nodes.iter().filter_map(get_node_str).join(".")
 }
 
 #[allow(dead_code)]

@@ -1,7 +1,6 @@
-use pg_query::protobuf::RangeVar;
-use std::fmt;
-
 use crate::parser::SchemaId;
+use pg_query::protobuf::RangeVar;
+use std::{fmt, str::FromStr};
 
 impl SchemaId {
     pub fn new(schema: impl Into<String>, name: impl Into<String>) -> Self {
@@ -41,6 +40,14 @@ impl From<Option<&RangeVar>> for SchemaId {
     fn from(v: Option<&RangeVar>) -> Self {
         assert!(v.is_some());
         v.unwrap().into()
+    }
+}
+
+impl FromStr for SchemaId {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<_> = s.split('.').collect();
+        Ok(Self::new_with(&parts))
     }
 }
 

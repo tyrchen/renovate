@@ -1,8 +1,8 @@
 use crate::{
     map_insert_relation, map_insert_schema,
     parser::{
-        AlterTable, AlterTableAction, Function, MatView, Table, TableConstraint, TableIndex,
-        TableOwner, TableRls, Trigger, View,
+        AlterTable, AlterTableAction, CompositeType, EnumType, Function, MatView, Privilege, Table,
+        TableConstraint, TableIndex, TableOwner, TableRls, Trigger, View,
     },
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
@@ -10,7 +10,7 @@ use crate::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use glob::glob;
-use pg_query::{NodeEnum, NodeRef};
+use pg_query::NodeRef;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::info;
@@ -66,55 +66,58 @@ impl SchemaLoader for SqlRepo {
 
         for (node, _, _) in nodes {
             match node {
-                NodeRef::CreateStmt(table) => {
-                    let item = Table::try_from(table).with_context(|| {
-                        let sql = NodeEnum::CreateStmt(table.clone()).deparse();
-                        format!("Failed to convert: {:?}", sql)
-                    })?;
+                NodeRef::CompositeTypeStmt(stmt) => {
+                    let item: CompositeType = stmt.try_into()?;
+                    map_insert_schema!(data.composite_types, item);
+                }
+                NodeRef::CreateEnumStmt(stmt) => {
+                    let item: EnumType = stmt.try_into()?;
+                    map_insert_schema!(data.enum_types, item);
+                }
+                NodeRef::CreateStmt(stmt) => {
+                    let item: Table = stmt.try_into()?;
                     map_insert_schema!(data.tables, item);
                 }
-                NodeRef::ViewStmt(view) => {
-                    let item = View::try_from(view)?;
+                NodeRef::ViewStmt(stmt) => {
+                    let item: View = stmt.try_into()?;
                     map_insert_schema!(data.views, item);
                 }
-                NodeRef::CreateTableAsStmt(mview) => {
-                    let item = MatView::try_from(mview)?;
+                NodeRef::CreateTableAsStmt(stmt) => {
+                    let item: MatView = stmt.try_into()?;
                     map_insert_schema!(data.mviews, item);
                 }
-                NodeRef::CreateFunctionStmt(func) => {
-                    let item = Function::try_from(func).with_context(|| {
-                        let sql = NodeEnum::CreateFunctionStmt(func.clone()).deparse();
-                        format!("Failed to convert: {:?}", sql)
-                    })?;
+                NodeRef::CreateFunctionStmt(stmt) => {
+                    let item: Function = stmt.try_into()?;
                     map_insert_schema!(data.functions, item);
                 }
-                NodeRef::CreateTrigStmt(trig) => {
-                    let item = Trigger::try_from(trig)?;
+                NodeRef::CreateTrigStmt(stmt) => {
+                    let item: Trigger = stmt.try_into()?;
                     data.triggers.insert(item.id.name.clone(), item);
                 }
-                NodeRef::AlterTableStmt(alter) => {
-                    let alter_table = AlterTable::try_from(alter)?;
-                    match &alter_table.action {
+                NodeRef::AlterTableStmt(stmt) => {
+                    let item: AlterTable = stmt.try_into()?;
+                    match &item.action {
                         AlterTableAction::Constraint(_) => {
-                            let constraint = TableConstraint::try_from(alter_table)?;
+                            let constraint: TableConstraint = item.try_into()?;
                             map_insert_relation!(data.table_constraints, constraint);
                         }
                         AlterTableAction::Rls => {
-                            let rls = TableRls::try_from(alter_table)?;
+                            let rls: TableRls = item.try_into()?;
                             data.table_rls.insert(rls.id.clone(), rls);
                         }
                         AlterTableAction::Owner(_) => {
-                            let owner = TableOwner::try_from(alter_table)?;
+                            let owner: TableOwner = item.try_into()?;
                             data.table_owners.insert(owner.id.clone(), owner);
                         }
                     }
                 }
                 NodeRef::IndexStmt(index) => {
-                    let item = TableIndex::try_from(index)?;
+                    let item: TableIndex = index.try_into()?;
                     map_insert_relation!(data.table_indexes, item);
                 }
-                NodeRef::GrantStmt(_grant) => {
-                    todo!()
+                NodeRef::GrantStmt(grant) => {
+                    let item: Privilege = grant.try_into()?;
+                    data.privileges.insert(item.id.clone(), item);
                 }
                 NodeRef::CommentStmt(_comment) => {
                     todo!()

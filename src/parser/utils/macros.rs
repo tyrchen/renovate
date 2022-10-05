@@ -1,7 +1,7 @@
 use crate::{
     parser::{
-        AlterTable, Function, MatView, Privilege, Table, TableConstraint, TableIndex, TableOwner,
-        TableRls, Trigger, View,
+        AlterTable, CompositeType, EnumType, Function, MatView, Privilege, Table, TableConstraint,
+        TableIndex, TableOwner, TableRls, Trigger, View,
     },
     MigrationPlanner, MigrationResult, NodeDiff, NodeItem,
 };
@@ -30,6 +30,8 @@ def_display!(TableConstraint);
 def_display!(TableIndex);
 def_display!(TableOwner);
 def_display!(TableRls);
+def_display!(CompositeType);
+def_display!(EnumType);
 
 macro_rules! def_simple_planner {
     ($name:ident) => {
@@ -69,6 +71,8 @@ def_simple_planner!(TableIndex);
 def_simple_planner!(TableOwner);
 def_simple_planner!(TableRls);
 def_simple_planner!(TableConstraint);
+def_simple_planner!(CompositeType);
+def_simple_planner!(EnumType);
 
 macro_rules! def_from_str {
     ($name:ident, $node_name:ident) => {
@@ -118,3 +122,5 @@ def_from_str!(TableIndex, IndexStmt);
 def_from_str!(TableOwner);
 def_from_str!(TableRls);
 def_from_str!(TableConstraint);
+def_from_str!(CompositeType, CompositeTypeStmt);
+def_from_str!(EnumType, CreateEnumStmt);
