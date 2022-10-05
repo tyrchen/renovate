@@ -7,4 +7,9 @@
 --     updated_at timestamp with time zone DEFAULT now() NOT NULL,
 --     CONSTRAINT tenants_name_check CHECK (((name)::text ~* '^[a-z][a-z0-9]{5,}$'::text))
 -- );
-CREATE TABLE foo (id serial not null primary key, name text default random_name(), CHECK (check_name(name)))
+-- CREATE TABLE foo (id serial not null primary key, name text default random_name(), CHECK (check_name(name)))
+
+CREATE TABLE public.foo (
+    id integer NOT NULL,
+    name text DEFAULT 'hello'::text NOT NULL
+);
