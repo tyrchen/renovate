@@ -1,5 +1,5 @@
 use super::{RelationId, Trigger};
-use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
+use crate::NodeItem;
 use anyhow::Context;
 use pg_query::{protobuf::CreateTrigStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
@@ -58,32 +58,6 @@ impl TryFrom<&CreateTrigStmt> for Trigger {
     }
 }
 
-impl MigrationPlanner for NodeDiff<Trigger> {
-    type Migration = String;
-
-    fn drop(&self) -> MigrationResult<Self::Migration> {
-        if let Some(old) = &self.old {
-            let sql = old.revert()?.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn create(&self) -> MigrationResult<Self::Migration> {
-        if let Some(new) = &self.new {
-            let sql = new.node.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn alter(&self) -> MigrationResult<Self::Migration> {
-        Ok(vec![])
-    }
-}
-
 #[allow(dead_code)]
 fn get_id(stmt: &CreateTrigStmt) -> RelationId {
     let name = stmt.trigname.clone();
@@ -95,7 +69,7 @@ fn get_id(stmt: &CreateTrigStmt) -> RelationId {
 
 #[cfg(test)]
 mod tests {
-    use crate::Differ;
+    use crate::{Differ, MigrationPlanner};
 
     use super::*;
 

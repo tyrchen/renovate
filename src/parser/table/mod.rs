@@ -143,6 +143,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_parse_and_to_string() {
+        let sql = "CREATE TABLE foo (id int PRIMARY KEY, name text NOT NULL UNIQUE)";
+        let table = Table::from_str(sql).unwrap();
+        let sql1 = table.node.deparse().unwrap();
+        assert_eq!(sql, sql1);
+    }
+
+    #[test]
     fn test_parse_table() {
         let sql =
             "CREATE TABLE foo (id serial not null primary key, name text default random_name(), CHECK (check_name(name)))";

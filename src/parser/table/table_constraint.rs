@@ -1,6 +1,6 @@
 use crate::{
     parser::{AlterTable, AlterTableAction, ConstraintInfo, RelationId, SchemaId, TableConstraint},
-    MigrationPlanner, MigrationResult, NodeDiff, NodeItem,
+    NodeItem,
 };
 use pg_query::{
     protobuf::{AlterTableStmt, ConstrType, Constraint as PgConstraint},
@@ -63,32 +63,6 @@ impl TryFrom<AlterTable> for TableConstraint {
     }
 }
 
-impl MigrationPlanner for NodeDiff<TableConstraint> {
-    type Migration = String;
-
-    fn drop(&self) -> MigrationResult<Self::Migration> {
-        if let Some(old) = &self.old {
-            let sql = old.revert()?.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn create(&self) -> MigrationResult<Self::Migration> {
-        if let Some(new) = &self.new {
-            let sql = new.node.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn alter(&self) -> MigrationResult<Self::Migration> {
-        Ok(vec![])
-    }
-}
-
 impl TableConstraint {
     fn new(id: SchemaId, info: ConstraintInfo, node: NodeEnum) -> Self {
         let id = RelationId::new_with(id, info.name.clone());
@@ -112,9 +86,8 @@ impl TryFrom<&PgConstraint> for ConstraintInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::Differ;
-
     use super::*;
+    use crate::{Differ, MigrationPlanner};
 
     #[test]
     fn alter_table_constraint_should_parse() {

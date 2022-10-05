@@ -1,7 +1,6 @@
-use crate::config::RenovateFormatConfig;
+use crate::{config::RenovateFormatConfig, NodeItem};
 use anyhow::Result;
 use console::{style, Style};
-use pg_query::NodeEnum;
 use similar::{ChangeTag, TextDiff};
 use std::{
     fmt::{self, Write},
@@ -28,11 +27,11 @@ pub fn ignore_file(p: &Path, pat: &str) -> bool {
     })
 }
 
-pub fn create_diff(old: &NodeEnum, new: &NodeEnum) -> Result<String> {
+pub fn create_diff<T: NodeItem>(old: &T, new: &T) -> Result<String> {
     let format = RenovateFormatConfig::default().into();
 
-    let old = sqlformat::format(&old.deparse()?, &Default::default(), format);
-    let new = sqlformat::format(&new.deparse()?, &Default::default(), format);
+    let old = sqlformat::format(&old.to_string(), &Default::default(), format);
+    let new = sqlformat::format(&new.to_string(), &Default::default(), format);
 
     diff_text(&old, &new)
 }

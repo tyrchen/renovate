@@ -87,8 +87,8 @@ impl MigrationPlanner for NodeDiff<Privilege> {
 
     fn drop(&self) -> MigrationResult<Self::Migration> {
         if let Some(old) = &self.old {
-            let sqls = vec![old.revert()?.deparse()?];
-            Ok(sqls)
+            let sql = old.revert()?.deparse()?;
+            Ok(vec![sql])
         } else {
             Ok(vec![])
         }

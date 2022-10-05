@@ -1,5 +1,5 @@
 use super::{SchemaId, View};
-use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
+use crate::NodeItem;
 use anyhow::Context;
 use pg_query::{protobuf::ViewStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
@@ -54,32 +54,6 @@ impl TryFrom<&ViewStmt> for View {
     }
 }
 
-impl MigrationPlanner for NodeDiff<View> {
-    type Migration = String;
-
-    fn drop(&self) -> MigrationResult<Self::Migration> {
-        if let Some(old) = &self.old {
-            let sql = old.revert()?.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn create(&self) -> MigrationResult<Self::Migration> {
-        if let Some(new) = &self.new {
-            let sql = new.node.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn alter(&self) -> MigrationResult<Self::Migration> {
-        Ok(vec![])
-    }
-}
-
 fn get_view_id(stmt: &ViewStmt) -> SchemaId {
     assert!(stmt.view.is_some());
     stmt.view.as_ref().unwrap().into()
@@ -88,7 +62,7 @@ fn get_view_id(stmt: &ViewStmt) -> SchemaId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Differ;
+    use crate::{Differ, MigrationPlanner};
 
     #[test]
     fn view_should_parse() {

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     parser::{AlterTable, AlterTableAction, SchemaId, TableOwner},
-    MigrationPlanner, MigrationResult, NodeDiff, NodeItem,
+    NodeItem,
 };
 use pg_query::{protobuf::AlterTableStmt, NodeEnum, NodeRef};
 
@@ -59,32 +59,6 @@ impl TryFrom<AlterTable> for TableOwner {
     }
 }
 
-impl MigrationPlanner for NodeDiff<TableOwner> {
-    type Migration = String;
-
-    fn drop(&self) -> MigrationResult<Self::Migration> {
-        if let Some(old) = &self.old {
-            let sql = old.revert()?.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn create(&self) -> MigrationResult<Self::Migration> {
-        if let Some(new) = &self.new {
-            let sql = new.node.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn alter(&self) -> MigrationResult<Self::Migration> {
-        Ok(vec![])
-    }
-}
-
 impl TableOwner {
     fn new(id: SchemaId, owner: String, node: NodeEnum) -> Self {
         Self { id, owner, node }
@@ -93,9 +67,8 @@ impl TableOwner {
 
 #[cfg(test)]
 mod tests {
-    use crate::Differ;
-
     use super::*;
+    use crate::{Differ, MigrationPlanner};
 
     #[test]
     fn table_owner_to_should_parse() {

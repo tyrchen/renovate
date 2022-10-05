@@ -1,3 +1,4 @@
+mod macros;
 pub mod parsec;
 
 use super::ConstraintInfo;

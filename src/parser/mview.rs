@@ -1,5 +1,5 @@
 use super::{MatView, SchemaId};
-use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
+use crate::NodeItem;
 use anyhow::Context;
 use pg_query::{protobuf::CreateTableAsStmt, NodeEnum, NodeRef};
 use std::str::FromStr;
@@ -56,32 +56,6 @@ impl TryFrom<&CreateTableAsStmt> for MatView {
     }
 }
 
-impl MigrationPlanner for NodeDiff<MatView> {
-    type Migration = String;
-
-    fn drop(&self) -> MigrationResult<Self::Migration> {
-        if let Some(old) = &self.old {
-            let sql = old.revert()?.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn create(&self) -> MigrationResult<Self::Migration> {
-        if let Some(new) = &self.new {
-            let sql = new.node.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn alter(&self) -> MigrationResult<Self::Migration> {
-        Ok(vec![])
-    }
-}
-
 fn get_mview_id(stmt: &CreateTableAsStmt) -> SchemaId {
     assert!(stmt.into.is_some());
     let into = stmt.into.as_ref().unwrap();
@@ -92,7 +66,7 @@ fn get_mview_id(stmt: &CreateTableAsStmt) -> SchemaId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Differ;
+    use crate::{Differ, MigrationPlanner};
 
     #[test]
     fn mview_should_parse() {

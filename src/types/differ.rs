@@ -2,7 +2,7 @@ use crate::{utils::create_diff, Differ, MigrationPlanner, NodeDiff, NodeItem};
 
 impl<T> Differ for T
 where
-    T: PartialEq + Clone + NodeItem,
+    T: PartialEq + Clone + NodeItem + ToString,
     NodeDiff<T>: MigrationPlanner,
 {
     type Diff = NodeDiff<T>;
@@ -14,7 +14,7 @@ where
         }
 
         if self != remote {
-            let diff = create_diff(self.node(), remote.node())?;
+            let diff = create_diff(self, remote)?;
             Ok(Some(NodeDiff {
                 old: Some(self.clone()),
                 new: Some(remote.clone()),

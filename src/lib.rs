@@ -34,7 +34,7 @@ pub trait DiffItem {
     fn node(&self) -> &NodeEnum;
 }
 
-pub trait NodeItem {
+pub trait NodeItem: ToString {
     type Inner;
     /// Unique id for the object
     fn id(&self) -> String;

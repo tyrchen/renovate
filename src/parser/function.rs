@@ -2,7 +2,7 @@ use super::{
     utils::{get_node_str, get_type_name},
     Function, FunctionArg, SchemaId,
 };
-use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
+use crate::NodeItem;
 use anyhow::Context;
 use itertools::Itertools;
 use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
@@ -68,32 +68,6 @@ impl TryFrom<&CreateFunctionStmt> for Function {
     }
 }
 
-impl MigrationPlanner for NodeDiff<Function> {
-    type Migration = String;
-
-    fn drop(&self) -> MigrationResult<Self::Migration> {
-        if let Some(old) = &self.old {
-            let sql = old.revert()?.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn create(&self) -> MigrationResult<Self::Migration> {
-        if let Some(new) = &self.new {
-            let sql = new.node.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn alter(&self) -> MigrationResult<Self::Migration> {
-        Ok(vec![])
-    }
-}
-
 fn parse_id(nodes: &[Node], args: &[FunctionArg]) -> SchemaId {
     let mut names = nodes.iter().filter_map(get_node_str).collect::<Vec<_>>();
     assert!(!names.is_empty() && names.len() <= 2);
@@ -117,7 +91,7 @@ fn parse_args(args: &[Node]) -> Vec<FunctionArg> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Differ;
+    use crate::{Differ, MigrationPlanner};
 
     use super::*;
 

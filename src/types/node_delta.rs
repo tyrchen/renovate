@@ -52,3 +52,13 @@ where
         Ok(migrations)
     }
 }
+
+impl<T> Default for NodeDelta<T> {
+    fn default() -> Self {
+        Self {
+            added: BTreeSet::new(),
+            removed: BTreeSet::new(),
+            changed: BTreeSet::new(),
+        }
+    }
+}

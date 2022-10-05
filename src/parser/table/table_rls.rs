@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     parser::{AlterTable, AlterTableAction, SchemaId, TableRls},
-    MigrationPlanner, MigrationResult, NodeDiff, NodeItem,
+    NodeItem,
 };
 use pg_query::{protobuf::AlterTableStmt, NodeEnum, NodeRef};
 
@@ -59,32 +59,6 @@ impl TryFrom<AlterTable> for TableRls {
     }
 }
 
-impl MigrationPlanner for NodeDiff<TableRls> {
-    type Migration = String;
-
-    fn drop(&self) -> MigrationResult<Self::Migration> {
-        if let Some(old) = &self.old {
-            let sql = old.revert()?.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn create(&self) -> MigrationResult<Self::Migration> {
-        if let Some(new) = &self.new {
-            let sql = new.node.deparse()?;
-            Ok(vec![sql])
-        } else {
-            Ok(vec![])
-        }
-    }
-
-    fn alter(&self) -> MigrationResult<Self::Migration> {
-        Ok(vec![])
-    }
-}
-
 impl TableRls {
     fn new(id: SchemaId, node: NodeEnum) -> Self {
         Self { id, node }
@@ -94,6 +68,7 @@ impl TableRls {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{MigrationPlanner, NodeDiff};
 
     #[test]
     fn table_rls_should_parse() {
