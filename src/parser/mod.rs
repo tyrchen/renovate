@@ -144,7 +144,7 @@ pub struct FunctionArg {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Column {
-    pub name: String,
+    pub id: RelationId,
     pub type_name: String,
     pub nullable: bool,
     // pub default: Option<String>,

@@ -109,11 +109,16 @@ pub trait DeltaItem {
     fn alter(self, node: &Self::SqlNode, remote: Self) -> Result<Vec<String>>;
 }
 
+pub trait SqlFormatter {
+    fn format(&self) -> Result<String>;
+}
+
 #[async_trait]
 pub trait MigrationExecutor {
     /// execute the migration
     async fn execute(&self) -> Result<()>;
 }
+
 
 /// Local repository
 #[derive(Debug, Clone)]

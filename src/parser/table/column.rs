@@ -3,19 +3,16 @@ use std::collections::BTreeSet;
 use crate::{
     parser::{
         utils::{get_type_name, node_to_embed_constraint},
-        Column, Table,
+        Column, RelationId, SchemaId, Table,
     },
     DeltaItem,
 };
 use anyhow::anyhow;
-use pg_query::{
-    protobuf::{ColumnDef, ConstrType},
-    NodeEnum,
-};
+use pg_query::protobuf::{ColumnDef, ConstrType};
 
-impl TryFrom<&ColumnDef> for Column {
+impl TryFrom<(SchemaId, ColumnDef)> for Column {
     type Error = anyhow::Error;
-    fn try_from(column: &ColumnDef) -> Result<Self, Self::Error> {
+    fn try_from((id, column): (SchemaId, ColumnDef)) -> Result<Self, Self::Error> {
         let name = column.colname.clone();
 
         let type_nodes = &column
@@ -37,7 +34,7 @@ impl TryFrom<&ColumnDef> for Column {
             .any(|c| c.con_type == ConstrType::ConstrNotnull);
 
         Ok(Self {
-            name,
+            id: RelationId::new_with(id, name),
             type_name,
             nullable,
             constraints,
@@ -46,22 +43,33 @@ impl TryFrom<&ColumnDef> for Column {
 }
 
 impl Column {
-    fn generate_change(self, _item: &Table) -> anyhow::Result<NodeEnum> {
-        todo!()
+    fn generate_add_sql(self) -> anyhow::Result<String> {
+        let mut sql = format!(
+            "ALTER TABLE {} ADD COLUMN {}",
+            self.id.schema_id, self.id.name
+        );
+        sql.push_str(&self.type_name);
+        if !self.nullable {
+            sql.push_str(" NOT NULL");
+        }
+        // for constraint in self.constraints {
+        //     sql.push_str(&format!(" {}", constraint.generate_sql()?));
+        // }
+        Ok(sql)
     }
 }
 
 impl DeltaItem for Column {
     type SqlNode = Table;
     fn drop(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
-        let node = self.generate_change(item)?;
-        let sql = format!("{};", node.deparse()?);
+        let sql = format!("ALTER TABLE {} DROP COLUMN {}", item.id, self.id.name);
+
         Ok(vec![sql])
     }
 
     fn create(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
-        let node = self.generate_change(item)?;
-        let sql = format!("{};", node.deparse()?);
+        // let sql = self.node().deparse()?;
+        let sql = format!("ALTER TABLE {} ADD COLUMN {}", item.id, self.id.name);
         Ok(vec![sql])
     }
 
