@@ -1,7 +1,7 @@
 fail_fast: false
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.3.0
     hooks:
       - id: check-byte-order-marker
       - id: check-case-conflict
@@ -12,13 +12,9 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/psf/black
-    rev: 19.3b0
+    rev: 22.10.0
     hooks:
       - id: black
-  - repo: https://github.com/crate-ci/typos
-    rev: v1.8.1
-    hooks:
-      - id: typos
   - repo: local
     hooks:
       - id: cargo-fmt
@@ -28,13 +24,20 @@ repos:
         language: rust
         files: \.rs$
         args: []
-      # - id: cargo-deny
-      #   name: cargo deny check
-      #   description: Check cargo dependencies
-      #   entry: bash -c 'cargo deny check'
-      #   language: rust
-      #   files: \.rs$
-      #   args: []
+      - id: cargo-deny
+        name: cargo deny check
+        description: Check cargo dependencies
+        entry: bash -c 'cargo deny check'
+        language: rust
+        files: \.rs$
+        args: []
+      - id: typos
+        name: typos
+        description: check typo
+        entry: bash -c 'typos'
+        language: rust
+        files: \.*$
+        pass_filenames: false
       - id: cargo-check
         name: cargo check
         description: Check the package for errors.
