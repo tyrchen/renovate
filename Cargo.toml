@@ -13,14 +13,14 @@ path = "src/main.rs"
 
 [features]
 default = ["cli"]
-cli = ["clap"]
+cli = ["clap-utils"]
 
 
 [dependencies]
 anyhow = "1.0.68"
 async-process = "1.6.0"
 async-trait = "0.1.60"
-clap = { version = "4.0.32", features = ["derive"], optional = true }
+clap-utils = { version = "0.3.0", features = ["highlight"], optional = true }
 console = "0.15.4"
 derivative = "2.2.0"
 git2 = { version = "0.15.0", default-features = false }

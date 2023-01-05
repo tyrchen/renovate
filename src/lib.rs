@@ -1,5 +1,5 @@
 #[cfg(feature = "cli")]
-mod cli;
+mod commands;
 mod config;
 mod macros;
 mod parser;
