@@ -45,10 +45,9 @@ impl TryFrom<(SchemaId, ColumnDef)> for Column {
 impl Column {
     fn generate_add_sql(self) -> anyhow::Result<String> {
         let mut sql = format!(
-            "ALTER TABLE {} ADD COLUMN {}",
-            self.id.schema_id, self.id.name
+            "ALTER TABLE {} ADD COLUMN {} {}",
+            self.id.schema_id, self.id.name, self.type_name
         );
-        sql.push_str(&self.type_name);
         if !self.nullable {
             sql.push_str(" NOT NULL");
         }
@@ -67,9 +66,8 @@ impl DeltaItem for Column {
         Ok(vec![sql])
     }
 
-    fn create(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
-        // let sql = self.node().deparse()?;
-        let sql = format!("ALTER TABLE {} ADD COLUMN {}", item.id, self.id.name);
+    fn create(self, _item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
+        let sql = self.generate_add_sql()?;
         Ok(vec![sql])
     }
 

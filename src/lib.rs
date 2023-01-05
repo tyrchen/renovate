@@ -119,7 +119,6 @@ pub trait MigrationExecutor {
     async fn execute(&self) -> Result<()>;
 }
 
-
 /// Local repository
 #[derive(Debug, Clone)]
 pub struct LocalRepo {
