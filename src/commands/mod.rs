@@ -1,11 +1,13 @@
+mod generate;
 mod pg;
 
 use clap_utils::prelude::*;
+use generate::*;
 use pg::*;
 
 /// Dispatch and execute the command. Make sure to add the new command enum into the enum_dispatch macro below.
 #[async_trait]
-#[enum_dispatch(Action, Pg)] // <- [new group] put the new group enum here
+#[enum_dispatch(Action, Generate, Pg)] // <- [new group] put the new group enum here
 pub trait CommandExecutor {
     async fn execute(&self, args: &Args) -> Result<(), Error>;
 }
@@ -26,5 +28,8 @@ pub struct Args {
 subcmd!(
     Action,
     // [new group] add the new command enum here
-    [Pg = "Postgres related migration"]
+    [
+        Generate = "generate something",
+        Pg = "Postgres related migration"
+    ]
 );

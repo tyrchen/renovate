@@ -82,8 +82,9 @@ impl GitRepo {
         };
 
         let tree = self.0.find_tree(oid)?;
+        let msg = format!("[renovate bot] {}", message.as_ref());
         self.0
-            .commit(Some("HEAD"), &sig, &sig, message.as_ref(), &tree, &parents)
+            .commit(Some("HEAD"), &sig, &sig, &msg, &tree, &parents)
     }
 
     pub fn tag(&self, name: impl AsRef<str>, message: impl AsRef<str>) -> Result<Oid, Error> {

@@ -1,4 +1,4 @@
-use crate::{utils::load_config, RemoteRepo, SchemaLoader, SqlSaver};
+use crate::{utils::load_config, DatabaseSchema, RemoteRepo, SchemaLoader, SqlSaver};
 use anyhow::Result;
 use sqlx::{Connection, Executor, PgConnection};
 
@@ -12,10 +12,14 @@ impl RemoteRepo {
         }
         tx.commit().await?;
 
-        let schema = self.load().await?;
+        self.fetch().await?;
+        Ok(())
+    }
 
+    pub async fn fetch(&self) -> Result<DatabaseSchema> {
+        let schema = self.load().await?;
         let config = load_config().await?;
         schema.save(&config.output).await?;
-        Ok(())
+        Ok(schema)
     }
 }

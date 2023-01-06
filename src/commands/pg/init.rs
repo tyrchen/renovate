@@ -1,5 +1,5 @@
 use super::{Args, CommandExecutor};
-use crate::{GitRepo, RemoteRepo, RenovateConfig, SchemaLoader, SqlSaver};
+use crate::{GitRepo, RemoteRepo, RenovateConfig};
 use clap_utils::prelude::*;
 use std::{env::set_current_dir, fs, path::PathBuf};
 use url::Url;
@@ -21,13 +21,11 @@ impl CommandExecutor for PgInitCommand {
         }
 
         set_current_dir(&path)?;
-
         let config = RenovateConfig::new(self.url.to_string());
-        let repo = RemoteRepo::new(self.url.clone());
-        let schema = repo.load().await?;
-
-        schema.save(&config.output).await?;
         config.save("renovate.yml").await?;
+
+        let remote_repo = RemoteRepo::new(&config.url);
+        remote_repo.fetch().await?;
 
         {
             let repo = GitRepo::init(".")?;

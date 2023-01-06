@@ -1,6 +1,9 @@
 use super::{generate_plan, Args, CommandExecutor};
 use crate::{utils::load_config, GitRepo, RemoteRepo};
-use clap_utils::{dialoguer::Confirm, prelude::*};
+use clap_utils::{
+    dialoguer::{theme::ColorfulTheme, Confirm},
+    prelude::*,
+};
 
 #[derive(Parser, Debug, Clone)]
 pub struct PgApplyCommand {}
@@ -15,7 +18,7 @@ impl CommandExecutor for PgApplyCommand {
         {
             let repo = GitRepo::open(".")?;
             if repo.is_dirty() {
-                bail!("There are uncommitted changes in the current git repo. Please commit them first.");
+                bail!("Your repo is dirty. Please commit the changes before applying.");
             }
         }
         if confirm("Do you want to perform this update?") {
@@ -24,7 +27,10 @@ impl CommandExecutor for PgApplyCommand {
                 let repo = GitRepo::open(".")?;
                 repo.commit("automatically retrieved most recent schema from remote server")?;
             }
-            println!("Database schema has been updated.");
+            println!(
+                "Successfully applied migration to {}.\nYour repo is updated with the latest schema. See `git diff HEAD~1` for details.",
+                config.url
+            );
         } else {
             println!("Database schema update has been cancelled.");
         }
@@ -34,7 +40,7 @@ impl CommandExecutor for PgApplyCommand {
 }
 
 pub(crate) fn confirm(prompt: &'static str) -> bool {
-    Confirm::new()
+    Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt(prompt)
         .interact()
         .expect("confirm UI should work")
