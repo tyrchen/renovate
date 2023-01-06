@@ -17,6 +17,10 @@ impl NodeItem for Table {
         self.id.to_string()
     }
 
+    fn type_name(&self) -> &'static str {
+        "table"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

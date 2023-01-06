@@ -11,6 +11,10 @@ impl NodeItem for TableOwner {
         self.id.to_string()
     }
 
+    fn type_name(&self) -> &'static str {
+        "table owner"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

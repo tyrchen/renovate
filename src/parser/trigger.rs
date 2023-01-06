@@ -9,6 +9,10 @@ impl NodeItem for Trigger {
         self.id.name.clone()
     }
 
+    fn type_name(&self) -> &'static str {
+        "trigger"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

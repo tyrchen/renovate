@@ -15,6 +15,10 @@ impl NodeItem for Privilege {
         format!("{}:{}", self.id, self.grantee)
     }
 
+    fn type_name(&self) -> &'static str {
+        "privilege"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

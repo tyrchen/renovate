@@ -14,6 +14,10 @@ impl NodeItem for TableConstraint {
         self.id.name.clone()
     }
 
+    fn type_name(&self) -> &'static str {
+        "constraint"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

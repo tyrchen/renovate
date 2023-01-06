@@ -8,8 +8,13 @@ use pg_query::{protobuf::CreateFunctionStmt, Node, NodeEnum, NodeRef};
 
 impl NodeItem for Function {
     type Inner = CreateFunctionStmt;
+
     fn id(&self) -> String {
         self.id.to_string()
+    }
+
+    fn type_name(&self) -> &'static str {
+        "function"
     }
 
     fn node(&self) -> &NodeEnum {

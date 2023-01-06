@@ -11,6 +11,10 @@ impl NodeItem for TableRls {
         self.id.to_string()
     }
 
+    fn type_name(&self) -> &'static str {
+        "table RLS"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

@@ -10,6 +10,10 @@ impl NodeItem for TableIndex {
         self.id.name.clone()
     }
 
+    fn type_name(&self) -> &'static str {
+        "index"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

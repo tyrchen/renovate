@@ -9,6 +9,10 @@ impl NodeItem for MatView {
         self.id.to_string()
     }
 
+    fn type_name(&self) -> &'static str {
+        "materialized view"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

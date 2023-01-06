@@ -12,6 +12,9 @@ pub struct PgApplyCommand {}
 impl CommandExecutor for PgApplyCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
         let plan = generate_plan().await?;
+        if plan.is_empty() {
+            return Ok(());
+        }
         let config = load_config().await?;
         let remote_repo = RemoteRepo::new(&config.url);
 

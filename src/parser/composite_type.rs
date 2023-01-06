@@ -8,6 +8,10 @@ impl NodeItem for CompositeType {
         self.id.to_string()
     }
 
+    fn type_name(&self) -> &'static str {
+        "composite type"
+    }
+
     fn node(&self) -> &NodeEnum {
         &self.node
     }

@@ -35,6 +35,8 @@ pub trait NodeItem: ToString {
     type Inner;
     /// Unique id for the object
     fn id(&self) -> String;
+    /// database type name for the object
+    fn type_name(&self) -> &'static str;
     /// get node for the item
     fn node(&self) -> &NodeEnum;
     /// get the inner item
