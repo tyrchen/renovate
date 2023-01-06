@@ -8,9 +8,6 @@ use pg::*;
 #[enum_dispatch(Action, Pg)] // <- [new group] put the new group enum here
 pub trait CommandExecutor {
     async fn execute(&self, args: &Args) -> Result<(), Error>;
-    fn is_protected(&self) -> bool {
-        true
-    }
 }
 
 /// Cella Team Internal CLI

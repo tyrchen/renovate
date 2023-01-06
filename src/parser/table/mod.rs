@@ -171,4 +171,14 @@ mod tests {
         assert_eq!(plan.len(), 1);
         assert_eq!(plan[0], "ALTER TABLE public.foo ADD COLUMN email text");
     }
+
+    #[test]
+    fn same_table_should_generate_valid_plan() {
+        let s1 = "CREATE TABLE public.todos (title text, completed boolean)";
+        let s2 = "CREATE TABLE public.todos (title text, completed boolean)";
+        let old: Table = s1.parse().unwrap();
+        let new: Table = s2.parse().unwrap();
+        let diff = old.diff(&new).unwrap();
+        assert!(diff.is_none());
+    }
 }

@@ -1,4 +1,5 @@
 ---
+url: postgres://localhost:5432/todo
 output:
   layout: nested
   path: /tmp/db

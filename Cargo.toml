@@ -1,6 +1,6 @@
 [package]
 name = "renovate"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [lib]
@@ -20,6 +20,7 @@ cli = ["clap-utils"]
 anyhow = "1.0.68"
 async-process = "1.6.0"
 async-trait = "0.1.60"
+atty = "0.2.14"
 clap-utils = { version = "0.3.0", features = ["highlight"], optional = true }
 console = "0.15.4"
 derivative = "2.2.0"

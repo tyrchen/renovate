@@ -27,7 +27,7 @@ repos:
       - id: cargo-deny
         name: cargo deny check
         description: Check cargo dependencies
-        entry: bash -c 'cargo deny check'
+        entry: bash -c 'cargo deny check -d'
         language: rust
         files: \.rs$
         args: []

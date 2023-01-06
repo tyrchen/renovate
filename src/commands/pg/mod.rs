@@ -1,4 +1,4 @@
-mod_pub_use!(init);
+mod_pub_use!(init, plan);
 
 use super::{Args, CommandExecutor};
 use clap_utils::prelude::*;
@@ -16,4 +16,10 @@ impl CommandExecutor for ActionPgCommand {
     }
 }
 
-subcmd!(Pg, [Init = "init a postgres migration repo"]);
+subcmd!(
+    Pg,
+    [
+        Init = "init a postgres migration repo",
+        Plan = "diff the local change and remote state, then make a migration plan"
+    ]
+);

@@ -109,6 +109,9 @@ impl SchemaLoader for SqlRepo {
                             let owner: TableOwner = item.try_into()?;
                             data.table_owners.insert(owner.id.clone(), owner);
                         }
+                        _ => {
+                            info!("ignore alter table action: {:?}", item.action);
+                        }
                     }
                 }
                 NodeRef::IndexStmt(index) => {
@@ -120,25 +123,25 @@ impl SchemaLoader for SqlRepo {
                     data.privileges.insert(item.id.clone(), item);
                 }
                 NodeRef::CommentStmt(_comment) => {
-                    todo!()
+                    info!("ignore comment");
                 }
                 NodeRef::CreateExtensionStmt(_ext) => {
-                    todo!()
+                    info!("ignore extension");
                 }
                 NodeRef::CreateSchemaStmt(_schema) => {
                     info!("ignoring schema");
                 }
                 NodeRef::CreateSeqStmt(_seq) => {
-                    todo!()
+                    info!("ignore seq for now");
                 }
                 NodeRef::CreateForeignTableStmt(_table) => {
-                    todo!()
+                    info!("ignore foreign table for now");
                 }
                 NodeRef::CreateForeignServerStmt(_server) => {
-                    todo!()
+                    info!("ignore foreign server for now");
                 }
                 NodeRef::CreateFdwStmt(_fdw) => {
-                    todo!()
+                    info!("ignore fwd for now");
                 }
                 NodeRef::CreatePolicyStmt(_policy) => {
                     todo!()

@@ -1,5 +1,6 @@
 build:
 	@cargo build
+	@rm -f ~/.cargo/bin/renovate && cp ~/.target/debug/renovate ~/.cargo/bin/
 
 test:
 	@CELLA_ENV=test cargo nextest run --all-features

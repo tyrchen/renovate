@@ -1,9 +1,10 @@
 #[cfg(feature = "cli")]
-mod commands;
+pub mod commands;
 mod config;
 mod macros;
 mod parser;
 mod repo;
+mod schema;
 mod types;
 mod utils;
 

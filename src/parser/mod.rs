@@ -254,6 +254,7 @@ pub enum AlterTableAction {
     Constraint(Box<ConstraintInfo>),
     Rls,
     Owner(String),
+    Unsupported,
 }
 
 /// Struct to capture `ALTER TABLE ENABLE ROW LEVEL SECURITY;`

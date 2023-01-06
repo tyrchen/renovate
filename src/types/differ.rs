@@ -25,3 +25,21 @@ where
         }
     }
 }
+
+impl<T> NodeDiff<T> {
+    pub fn with_old(old: T) -> Self {
+        Self {
+            old: Some(old),
+            new: None,
+            diff: "".to_owned(),
+        }
+    }
+
+    pub fn with_new(new: T) -> Self {
+        Self {
+            old: None,
+            new: Some(new),
+            diff: "".to_owned(),
+        }
+    }
+}

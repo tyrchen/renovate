@@ -77,11 +77,7 @@ mod tests {
     fn table_rls_should_generate_drop_create_migration() {
         let sql1 = "ALTER TABLE foo ENABLE ROW LEVEL SECURITY";
 
-        let diff: NodeDiff<TableRls> = NodeDiff {
-            old: Some(sql1.parse().unwrap()),
-            new: None,
-            diff: sql1.to_string(),
-        };
+        let diff: NodeDiff<TableRls> = NodeDiff::with_old(sql1.parse().unwrap());
         let plan = diff.plan().unwrap();
         assert_eq!(plan, &["ALTER TABLE public.foo DISABLE ROW LEVEL SECURITY"]);
     }

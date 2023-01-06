@@ -5,6 +5,7 @@ use pg_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType},
     NodeEnum,
 };
+use tracing::warn;
 
 impl TryFrom<&AlterTableStmt> for AlterTable {
     type Error = anyhow::Error;
@@ -48,7 +49,10 @@ impl TryFrom<&AlterTableCmd> for AlterTableAction {
                 Ok(Self::Owner(owner.rolename.clone()))
             }
             (AlterTableType::AtEnableRowSecurity, None) => Ok(Self::Rls),
-            _ => todo!(),
+            (ty, node) => {
+                warn!("unhandled alter table action: {:?} {:?}", ty, node);
+                Ok(Self::Unsupported)
+            }
         }
     }
 }

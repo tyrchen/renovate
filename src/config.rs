@@ -1,12 +1,15 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use sqlformat::{FormatOptions, Indent};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::fs;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct RenovateConfig {
+    /// The url of the database to connect to
+    pub url: String,
+    /// The output config
     #[serde(default)]
     pub output: RenovateOutputConfig,
 }
@@ -70,13 +73,40 @@ impl From<RenovateFormatConfig> for FormatOptions {
 }
 
 impl RenovateConfig {
-    pub async fn load(path: &str) -> Result<Self> {
+    pub fn new(url: String, path: impl Into<PathBuf>) -> Self {
+        Self {
+            url,
+            output: RenovateOutputConfig::new(path),
+        }
+    }
+
+    pub async fn load(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
         let content = fs::read_to_string(path)
             .await
-            .with_context(|| format!("Failed to read configuration: {}", path))?;
+            .with_context(|| format!("Failed to read configuration: {}", path.display()))?;
         let config = serde_yaml::from_str(&content)
             .with_context(|| format!("Failed to parse configuration:\n{}", content))?;
         Ok(config)
+    }
+
+    pub async fn save(&self, path: impl AsRef<Path>) -> Result<()> {
+        let path = path.as_ref();
+        let content = serde_yaml::to_string(&self)
+            .with_context(|| format!("Failed to serialize configuration: {:?}", self))?;
+        fs::write(path, content)
+            .await
+            .with_context(|| format!("Failed to write configuration: {}", path.display()))?;
+        Ok(())
+    }
+}
+
+impl RenovateOutputConfig {
+    pub fn new(path: impl Into<PathBuf>) -> Self {
+        Self {
+            path: path.into(),
+            ..Default::default()
+        }
     }
 }
 
