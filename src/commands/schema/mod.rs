@@ -4,24 +4,24 @@ use super::{Args, CommandExecutor};
 use clap_utils::prelude::*;
 
 #[derive(Parser, Debug, Clone)]
-pub struct ActionPgCommand {
+pub struct ActionSchemaCommand {
     #[clap(subcommand)]
-    pub cmd: Pg,
+    pub cmd: Schema,
 }
 
 #[async_trait]
-impl CommandExecutor for ActionPgCommand {
+impl CommandExecutor for ActionSchemaCommand {
     async fn execute(&self, args: &Args) -> Result<(), Error> {
         self.cmd.execute(args).await
     }
 }
 
 subcmd!(
-    Pg,
+    Schema,
     [
-        Apply = "apply the migration plan to the remote postgres server",
-        Fetch = "fetch the most recent schema from the remote postgres server",
-        Init = "init a postgres migration repo",
+        Apply = "apply the migration plan to the remote database server",
+        Fetch = "fetch the most recent schema from the remote database server",
+        Init = "init a database migration repo",
         Plan = "diff the local change and remote state, then make a migration plan"
     ]
 );

@@ -5,13 +5,13 @@ use std::{env::set_current_dir, fs, path::PathBuf};
 use url::Url;
 
 #[derive(Parser, Debug, Clone)]
-pub struct PgInitCommand {
+pub struct SchemaInitCommand {
     #[clap(value_parser = parse_url)]
     pub url: Url,
 }
 
 #[async_trait]
-impl CommandExecutor for PgInitCommand {
+impl CommandExecutor for SchemaInitCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
         let path = PathBuf::from(format!(".{}", self.url.path()));
         if path.exists() && path.read_dir()?.next().is_some() {

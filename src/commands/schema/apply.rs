@@ -6,10 +6,10 @@ use clap_utils::{
 };
 
 #[derive(Parser, Debug, Clone)]
-pub struct PgApplyCommand {}
+pub struct SchemaApplyCommand {}
 
 #[async_trait]
-impl CommandExecutor for PgApplyCommand {
+impl CommandExecutor for SchemaApplyCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
         let plan = generate_plan().await?;
         if plan.is_empty() {

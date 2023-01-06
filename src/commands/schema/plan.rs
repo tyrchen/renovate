@@ -3,10 +3,10 @@ use crate::{utils::load_config, LocalRepo, RemoteRepo, SchemaLoader};
 use clap_utils::prelude::*;
 
 #[derive(Parser, Debug, Clone)]
-pub struct PgPlanCommand {}
+pub struct SchemaPlanCommand {}
 
 #[async_trait]
-impl CommandExecutor for PgPlanCommand {
+impl CommandExecutor for SchemaPlanCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
         generate_plan().await?;
         Ok(())

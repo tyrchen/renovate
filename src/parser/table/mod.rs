@@ -185,4 +185,20 @@ mod tests {
         let diff = old.diff(&new).unwrap();
         assert!(diff.is_none());
     }
+
+    #[ignore = "not implemented yet"]
+    #[test]
+    fn table_add_column_with_default_function_should_work() {
+        let s1 = "CREATE TABLE foo (name text)";
+        let s2 = "CREATE TABLE foo (name text default random_name())";
+        let old: Table = s1.parse().unwrap();
+        let new: Table = s2.parse().unwrap();
+        let diff = old.diff(&new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(
+            plan[0],
+            "ALTER TABLE public.foo ALTER COLUMN name SET DEFAULT random_name()"
+        );
+    }
 }
