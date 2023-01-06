@@ -3,7 +3,7 @@ build:
 	@rm -f ~/.cargo/bin/renovate && cp ~/.target/debug/renovate ~/.cargo/bin/
 
 test:
-	@CELLA_ENV=test cargo nextest run --all-features
+	@cargo nextest run --all-features
 
 release:
 	@cargo release tag --execute

@@ -12,7 +12,7 @@ pub trait CommandExecutor {
     async fn execute(&self, args: &Args) -> Result<(), Error>;
 }
 
-/// Cella Team Internal CLI
+/// Renovate database migration tool
 #[derive(Parser, Debug, Clone)]
 #[clap(version, author, about, long_about = None)]
 pub struct Args {

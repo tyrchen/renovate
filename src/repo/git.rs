@@ -88,7 +88,7 @@ impl GitRepo {
     }
 
     pub fn tag(&self, name: impl AsRef<str>, message: impl AsRef<str>) -> Result<Oid, Error> {
-        let sig = Signature::now("Bot", "bot@cellacloud.com")?;
+        let sig = Signature::now("Bot", "bot@renovate.tools")?;
         let head_object = self.find_last_commit()?;
         self.0
             .tag(name.as_ref(), &head_object, &sig, message.as_ref(), false)
