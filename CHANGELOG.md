@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5] - 2023-01-06
+
+[e124a66](e124a6613894449aa9ccb1e7d9d94812925458f8)...[67bb303](67bb303518436845dbac8ab4ad321665e14501d5)
+
+### Bug Fixes
+
+- Add test for schema_diff and fix schema_id issue ([f3a9754](f3a9754399f22b1b402fb4b35e6c6aefabac7585) - 2023-01-06 by Tyr Chen)
+
+### Refactor
+
+- Rename subcommand `pg` to `schema`. ([67bb303](67bb303518436845dbac8ab4ad321665e14501d5) - 2023-01-06 by Tyr Chen)
+
 ## [0.2.4] - 2023-01-06
 
 [31b4ffd](31b4ffd386ccdaa32e73bc636c6381ad7223e5e2)...[e124a66](e124a6613894449aa9ccb1e7d9d94812925458f8)
