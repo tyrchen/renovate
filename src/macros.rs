@@ -18,7 +18,7 @@ macro_rules! map_insert_relation {
 
 #[macro_export]
 macro_rules! schema_diff {
-    ($local:expr, $remote:expr, $migrations:ident, $t:ty) => {
+    ($local:expr, $remote:expr, $migrations:ident, $t:ty, $verbose:ident) => {
         let keys: HashSet<_> = $local.keys().collect();
         let other_keys: HashSet<_> = $remote.keys().collect();
 
@@ -34,7 +34,7 @@ macro_rules! schema_diff {
                 let v = local.get(*key).unwrap().clone();
                 let id = v.id();
                 let diff = NodeDiff::with_new(v);
-                if atty::is(atty::Stream::Stdout) {
+                if $verbose && atty::is(atty::Stream::Stdout) {
                     println!("{} {} is added:\n{}", stringify!($t), id, diff.diff);
                 }
                 $migrations.extend(diff.plan()?);
@@ -44,7 +44,7 @@ macro_rules! schema_diff {
                 let v = remote.get(*key).unwrap().clone();
                 let id = v.id();
                 let diff = NodeDiff::with_old(v);
-                if atty::is(atty::Stream::Stdout) {
+                if $verbose && atty::is(atty::Stream::Stdout) {
                     println!("{} {} is removed:\n{}", stringify!($t), id, diff.diff);
                 }
                 $migrations.extend(diff.plan()?);
@@ -56,7 +56,7 @@ macro_rules! schema_diff {
 
                 let diff = remote.diff(&local)?;
                 if let Some(diff) = diff {
-                    if atty::is(atty::Stream::Stdout) {
+                    if $verbose && atty::is(atty::Stream::Stdout) {
                         println!(
                             "{} {} is changed:\n\n{}",
                             stringify!($t),
@@ -75,7 +75,7 @@ macro_rules! schema_diff {
             $migrations.push(format!("CREATE SCHEMA {}", key));
             for (_name, item) in $local.get(*key).unwrap() {
                 let diff = NodeDiff::with_new(item.clone());
-                if atty::is(atty::Stream::Stdout) {
+                if $verbose && atty::is(atty::Stream::Stdout) {
                     println!("{} {} is added:\n{}", stringify!($t), item.id(), diff.diff);
                 }
                 $migrations.extend(diff.plan()?);
@@ -87,7 +87,7 @@ macro_rules! schema_diff {
         for key in removed {
             for (_name, item) in $remote.get(*key).unwrap() {
                 let diff = NodeDiff::with_old(item.clone());
-                if atty::is(atty::Stream::Stdout) {
+                if $verbose && atty::is(atty::Stream::Stdout) {
                     println!(
                         "{} {} is removed:\n{}",
                         stringify!($t),

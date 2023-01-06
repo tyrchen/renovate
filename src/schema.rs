@@ -1,10 +1,11 @@
 use crate::{
-    parser::Table, schema_diff, DatabaseSchema, Differ, MigrationPlanner, NodeDiff, NodeItem,
+    parser::{CompositeType, Function, Table, View},
+    schema_diff, DatabaseSchema, Differ, MigrationPlanner, NodeDiff, NodeItem,
 };
 use std::collections::HashSet;
 
 impl DatabaseSchema {
-    pub fn plan(&self, other: &Self) -> anyhow::Result<Vec<String>> {
+    pub fn plan(&self, other: &Self, verbose: bool) -> anyhow::Result<Vec<String>> {
         let mut migrations: Vec<String> = Vec::new();
 
         // diff on types
@@ -12,14 +13,21 @@ impl DatabaseSchema {
             &self.composite_types,
             &other.composite_types,
             migrations,
-            Table
+            CompositeType,
+            verbose
         );
         // diff on tables
-        schema_diff!(&self.tables, &other.tables, migrations, Table);
+        schema_diff!(&self.tables, &other.tables, migrations, Table, verbose);
         // diff on views
-        schema_diff!(&self.views, &other.views, migrations, Table);
+        schema_diff!(&self.views, &other.views, migrations, View, verbose);
         // diff on functions
-        schema_diff!(&self.functions, &other.functions, migrations, Table);
+        schema_diff!(
+            &self.functions,
+            &other.functions,
+            migrations,
+            Function,
+            verbose
+        );
 
         Ok(migrations)
     }

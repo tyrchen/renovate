@@ -1,5 +1,5 @@
-use crate::{config::RenovateFormatConfig, NodeItem};
-use anyhow::Result;
+use crate::{config::RenovateFormatConfig, NodeItem, RenovateConfig};
+use anyhow::{bail, Result};
 use console::{style, Style};
 use similar::{ChangeTag, TextDiff};
 use std::{
@@ -34,6 +34,15 @@ pub fn create_diff<T: NodeItem>(old: &T, new: &T) -> Result<String> {
     let new = sqlformat::format(&new.to_string(), &Default::default(), format);
 
     diff_text(&old, &new)
+}
+
+pub(crate) async fn load_config() -> Result<RenovateConfig> {
+    let config_file = Path::new("renovate.yml");
+    if !config_file.exists() {
+        bail!("config file renovate.yml not found in current directory");
+    }
+    let config = RenovateConfig::load(config_file).await?;
+    Ok(config)
 }
 
 /// generate the diff between two strings. TODO: this is just for console output for now

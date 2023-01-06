@@ -1,8 +1,7 @@
-use crate::{RemoteRepo, RenovateConfig, SchemaLoader, SqlSaver};
-
 use super::{Args, CommandExecutor};
+use crate::{GitRepo, RemoteRepo, RenovateConfig, SchemaLoader, SqlSaver};
 use clap_utils::prelude::*;
-use std::{fs, path::PathBuf};
+use std::{env::set_current_dir, fs, path::PathBuf};
 use url::Url;
 
 #[derive(Parser, Debug, Clone)]
@@ -20,12 +19,20 @@ impl CommandExecutor for PgInitCommand {
         } else {
             fs::create_dir(&path)?;
         }
-        let config = RenovateConfig::new(self.url.to_string(), &path);
+
+        set_current_dir(&path)?;
+
+        let config = RenovateConfig::new(self.url.to_string());
         let repo = RemoteRepo::new(self.url.clone());
         let schema = repo.load().await?;
 
         schema.save(&config.output).await?;
-        config.save(path.join("renovate.yml")).await?;
+        config.save("renovate.yml").await?;
+
+        {
+            let repo = GitRepo::init(".")?;
+            repo.commit(format!("init schema migration repo for {}", self.url))?;
+        }
 
         println!(
             "Database schema for {} has successfully dumped into {}.",

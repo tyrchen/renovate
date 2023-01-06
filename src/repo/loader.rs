@@ -38,6 +38,10 @@ impl SchemaLoader for LocalRepo {
             sql.push_str(&content);
         }
 
+        // parse the sql to see if the syntax is correct
+        let ret = pg_query::parse(&sql)?;
+        let sql = ret.deparse()?;
+
         SqlRepo(sql).load().await
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "renovate"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 
 [lib]
@@ -33,9 +33,11 @@ serde = { version = "1.0.152", features = ["derive"] }
 serde_yaml = "0.9.16"
 similar = { version = "2.2.1", features = ["inline"] }
 sqlformat = "0.2.0"
+sqlx = { version = "0.6.2", features = ["postgres", "runtime-tokio-rustls"] }
 tokio = { version = "1.23.1", features = ["fs", "rt", "macros", "rt-multi-thread", "tracing"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
 url = "2.3.1"
 
 [dev-dependencies]
+tempfile = "3.3.0"

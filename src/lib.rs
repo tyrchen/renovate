@@ -16,6 +16,7 @@ use std::{collections::BTreeSet, path::PathBuf};
 
 pub use config::RenovateConfig;
 pub use parser::DatabaseSchema;
+pub use repo::git::{BumpVersion, GitRepo};
 
 #[async_trait]
 pub trait SchemaLoader {

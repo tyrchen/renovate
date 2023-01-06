@@ -73,10 +73,10 @@ impl From<RenovateFormatConfig> for FormatOptions {
 }
 
 impl RenovateConfig {
-    pub fn new(url: impl Into<String>, path: impl Into<PathBuf>) -> Self {
+    pub fn new(url: impl Into<String>) -> Self {
         Self {
             url: url.into(),
-            output: RenovateOutputConfig::new(path),
+            output: RenovateOutputConfig::default(),
         }
     }
 
