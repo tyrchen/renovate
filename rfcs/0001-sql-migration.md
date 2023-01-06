@@ -23,19 +23,19 @@ User could use the tool like this:
 
 ```bash
 # dump all the schemas into a folder
-$ renovate init --source postgres://user@localhost:5432/hello
+$ renovate pg init --url postgres://user@localhost:5432/hello
 Database schema has successfully dumped into ./hello.
 
 # if schema already exists, before modifying it, it is always a good practice to fetch the latest schema. Fetch will fail if current folder is not under git or it is not up to date with remote repository.
-$ renovate fetch
+$ renovate pg fetch
 
 # do whatever schema changes you want
 
 # then run plan to see what changes will be applied. When redirect to a file, it will just print all the SQL statements for the migration.
-$ renovate plan
+$ renovate pg plan
 Table auth.users changed:
 
-create table users(
+create table auth.users(
     id uuid primary key,
     name text not null,
     email text not null,
@@ -47,8 +47,8 @@ create table users(
 
 The following SQLs will be applied:
 
-    alter table users add column updated_at timestamptz not null;
-    alter table users alter column created_at set default now();
+    alter table auth.users add column updated_at timestamptz not null;
+    alter table auth.users alter column created_at set default now();
 
 # then apply the changes
 $ renovate apply
@@ -63,8 +63,8 @@ $ renovate apply
 
 The following SQLs will be applied:
 
-    alter table users add column updated_at timestamptz not null;
-    alter table users alter column created_at set default now();
+    alter table auth.users add column updated_at timestamptz not null;
+    alter table auth.users alter column created_at set default now();
 
 Continue (y/n)? y
 Successfully applied migration to postgres://user@localhost:5432/hello.
