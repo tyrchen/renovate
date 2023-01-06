@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2023-01-06
+
+[c81aa65](c81aa65505e7b54bc2a022b9d83a8342e6d4dd22)...[31b4ffd](31b4ffd386ccdaa32e73bc636c6381ad7223e5e2)
+
+### Features
+
+- Add `renovate pg fetch` and `renovate generate completion`. ([31b4ffd](31b4ffd386ccdaa32e73bc636c6381ad7223e5e2) - 2023-01-06 by Tyr Chen)
+
 ## [0.2.2] - 2023-01-06
 
 [65d2e13](65d2e132651a89d262895a9dd6da20c5e9b08550)...[c81aa65](c81aa65505e7b54bc2a022b9d83a8342e6d4dd22)
