@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2023-01-06
+
+[65d2e13](65d2e132651a89d262895a9dd6da20c5e9b08550)...[c81aa65](c81aa65505e7b54bc2a022b9d83a8342e6d4dd22)
+
+### Features
+
+- Support `renovate pg apply` command ([c81aa65](c81aa65505e7b54bc2a022b9d83a8342e6d4dd22) - 2023-01-06 by Tyr Chen)
+
 ## [0.2.1] - 2023-01-06
 
 [257f82f](257f82f497f117946372fb5af432b3ab7e347c86)...[65d2e13](65d2e132651a89d262895a9dd6da20c5e9b08550)
