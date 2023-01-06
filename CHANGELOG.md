@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6] - 2023-01-06
+
+[67bb303](67bb303518436845dbac8ab4ad321665e14501d5)...[9a36034](9a360344c11fe77eb0c0a07337bc8656b24c5526)
+
+### Miscellaneous Tasks
+
+- Improve help ([9a36034](9a360344c11fe77eb0c0a07337bc8656b24c5526) - 2023-01-06 by Tyr Chen)
+
 ## [0.2.5] - 2023-01-06
 
 [e124a66](e124a6613894449aa9ccb1e7d9d94812925458f8)...[67bb303](67bb303518436845dbac8ab4ad321665e14501d5)
