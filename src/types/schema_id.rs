@@ -11,7 +11,7 @@ impl SchemaId {
     }
 
     pub fn new_with(names: &[&str]) -> Self {
-        if names.len() > 2 {
+        if names.len() >= 2 {
             Self {
                 schema: names[0].to_string(),
                 name: names[1..].join("."),

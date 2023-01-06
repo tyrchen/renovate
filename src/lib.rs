@@ -134,3 +134,7 @@ pub struct LocalRepo {
 pub struct RemoteRepo {
     pub url: String,
 }
+
+/// intermediate representation for local and remote repo
+#[derive(Debug, Clone)]
+pub struct SqlLoader(String);

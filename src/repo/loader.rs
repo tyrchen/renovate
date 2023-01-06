@@ -5,7 +5,7 @@ use crate::{
         TableConstraint, TableIndex, TableOwner, TableRls, Trigger, View,
     },
     utils::ignore_file,
-    DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
+    DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader, SqlLoader,
 };
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
@@ -14,10 +14,6 @@ use pg_query::NodeRef;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::info;
-
-/// intermediate representation for local and remote repo
-#[derive(Debug, Clone)]
-struct SqlRepo(String);
 
 #[async_trait]
 impl SchemaLoader for LocalRepo {
@@ -42,7 +38,7 @@ impl SchemaLoader for LocalRepo {
         let ret = pg_query::parse(&sql)?;
         let sql = ret.deparse()?;
 
-        SqlRepo(sql).load().await
+        SqlLoader(sql).load().await
     }
 }
 
@@ -61,12 +57,12 @@ impl SchemaLoader for RemoteRepo {
         }
 
         let sql = String::from_utf8(output.stdout)?;
-        SqlRepo(sql).load().await
+        SqlLoader(sql).load().await
     }
 }
 
 #[async_trait]
-impl SchemaLoader for SqlRepo {
+impl SchemaLoader for SqlLoader {
     async fn load(&self) -> Result<DatabaseSchema> {
         let result = pg_query::parse(&self.0).with_context(|| "Failed to parse SQL statements")?;
         let nodes = result.protobuf.nodes();

@@ -123,3 +123,50 @@ where
     }
     Ok(migrations)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{SchemaLoader, SqlLoader};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn database_schema_plan_should_work() -> Result<()> {
+        let loader = SqlLoader::new(
+            r#"
+            CREATE TYPE public.test_type AS (id uuid, name text);
+            CREATE TABLE public.test_table (id uuid, name text);
+            CREATE VIEW public.test_view AS SELECT * FROM public.test_table;
+            CREATE FUNCTION public.test_function(a text) RETURNS text AS $$ SELECT 'test', a $$ LANGUAGE SQL;
+            "#,
+        );
+        let remote = loader.load().await?;
+        let loader = SqlLoader::new(
+            r#"
+            CREATE TYPE public.test_type AS (id uuid, name text);
+            CREATE TABLE public.test_table (id uuid, name text, created_at timestamptz);
+            CREATE VIEW public.test_view AS SELECT * FROM public.test_table where created_at > now();
+            CREATE FUNCTION public.test_function(a text) RETURNS text AS $$ SELECT a, 'test1' $$ LANGUAGE SQL;
+            "#,
+        );
+        let local = loader.load().await?;
+        let migrations = local.plan(&remote, false).unwrap();
+        assert_eq!(migrations.len(), 5);
+        assert_eq!(
+            migrations[0],
+            "ALTER TABLE public.test_table ADD COLUMN created_at timestamptz"
+        );
+        assert_eq!(migrations[1], "DROP VIEW public.test_view");
+        assert_eq!(
+            migrations[2],
+            "CREATE VIEW public.test_view AS SELECT * FROM public.test_table WHERE created_at > now()"
+        );
+        assert_eq!(migrations[3], "DROP FUNCTION public.test_function(text)");
+        assert_eq!(
+            migrations[4],
+            "CREATE FUNCTION public.test_function(a text) RETURNS text AS $$ SELECT a, 'test1' $$ LANGUAGE sql"
+        );
+
+        Ok(())
+    }
+}

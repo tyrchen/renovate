@@ -43,6 +43,7 @@ impl TryFrom<&CreateFunctionStmt> for Function {
     type Error = anyhow::Error;
     fn try_from(stmt: &CreateFunctionStmt) -> Result<Self, Self::Error> {
         let args = parse_args(&stmt.parameters);
+
         let id = parse_id(&stmt.funcname, &args);
 
         let returns = get_type_name(&stmt.return_type.as_ref().unwrap().names);
@@ -110,8 +111,8 @@ mod tests {
 
     #[test]
     fn unchanged_function_should_return_none() {
-        let f1 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$";
-        let f2 = "CREATE FUNCTION test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$";
+        let f1 = "CREATE FUNCTION public.test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$";
+        let f2 = "CREATE FUNCTION public.test() RETURNS text LANGUAGE sql STABLE AS $$ select 1 $$";
         let old: Function = f1.parse().unwrap();
         let new: Function = f2.parse().unwrap();
         let diff = old.diff(&new).unwrap();
