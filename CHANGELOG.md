@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.4] - 2023-01-06
+
+[31b4ffd](31b4ffd386ccdaa32e73bc636c6381ad7223e5e2)...[e124a66](e124a6613894449aa9ccb1e7d9d94812925458f8)
+
+### Refactor
+
+- Deprecate schema_diff macro, use function instead ([e124a66](e124a6613894449aa9ccb1e7d9d94812925458f8) - 2023-01-06 by Tyr Chen)
+
 ## [0.2.3] - 2023-01-06
 
 [c81aa65](c81aa65505e7b54bc2a022b9d83a8342e6d4dd22)...[31b4ffd](31b4ffd386ccdaa32e73bc636c6381ad7223e5e2)
