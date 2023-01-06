@@ -73,9 +73,9 @@ impl From<RenovateFormatConfig> for FormatOptions {
 }
 
 impl RenovateConfig {
-    pub fn new(url: String, path: impl Into<PathBuf>) -> Self {
+    pub fn new(url: impl Into<String>, path: impl Into<PathBuf>) -> Self {
         Self {
-            url,
+            url: url.into(),
             output: RenovateOutputConfig::new(path),
         }
     }

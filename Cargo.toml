@@ -1,6 +1,6 @@
 [package]
 name = "renovate"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 [lib]
@@ -36,5 +36,6 @@ sqlformat = "0.2.0"
 tokio = { version = "1.23.1", features = ["fs", "rt", "macros", "rt-multi-thread", "tracing"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
+url = "2.3.1"
 
 [dev-dependencies]

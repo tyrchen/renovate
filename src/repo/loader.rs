@@ -7,7 +7,7 @@ use crate::{
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader,
 };
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use glob::glob;
 use pg_query::NodeRef;
@@ -50,9 +50,13 @@ impl SchemaLoader for RemoteRepo {
             .arg("-s")
             .arg(&self.url)
             .output()
-            .await?
-            .stdout;
-        let sql = String::from_utf8(output)?;
+            .await?;
+
+        if !output.status.success() {
+            bail!("{}", String::from_utf8(output.stderr)?);
+        }
+
+        let sql = String::from_utf8(output.stdout)?;
         SqlRepo(sql).load().await
     }
 }
