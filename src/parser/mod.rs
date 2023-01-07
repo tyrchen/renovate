@@ -39,6 +39,7 @@ pub struct DatabaseSchema {
     pub views: BTreeMap<String, BTreeMap<String, View>>,
     pub mviews: BTreeMap<String, BTreeMap<String, MatView>>,
     pub functions: BTreeMap<String, BTreeMap<String, Function>>,
+    pub sequences: BTreeMap<String, BTreeMap<String, Sequence>>,
 
     // database level objects
     pub triggers: BTreeMap<String, Trigger>,
@@ -53,7 +54,6 @@ pub struct DatabaseSchema {
     pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
 
     // internal data structures
-    _sequences: BTreeMap<String, Sequence>,
     _table_sequences: BTreeMap<SchemaId, SequenceInfo>,
 }
 
@@ -154,7 +154,7 @@ pub struct Column {
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sequence {
-    pub id: RelationId,
+    pub id: SchemaId,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
 }

@@ -20,7 +20,7 @@ impl NodeItem for MatView {
     fn inner(&self) -> anyhow::Result<&Self::Inner> {
         match &self.node {
             NodeEnum::CreateTableAsStmt(stmt) => Ok(stmt),
-            _ => anyhow::bail!("not a create trigger statement"),
+            _ => anyhow::bail!("not a create materialized view statement"),
         }
     }
 
@@ -30,7 +30,7 @@ impl NodeItem for MatView {
         let node = parsed.protobuf.nodes()[0].0;
         match node {
             NodeRef::DropStmt(stmt) => Ok(NodeEnum::DropStmt(stmt.clone())),
-            _ => anyhow::bail!("not a drop index statement"),
+            _ => anyhow::bail!("not a drop statement"),
         }
     }
 }

@@ -1,8 +1,8 @@
 use crate::{
     map_insert_relation, map_insert_schema,
     parser::{
-        AlterTable, AlterTableAction, CompositeType, EnumType, Function, MatView, Privilege, Table,
-        TableConstraint, TableIndex, TableOwner, TableRls, Trigger, View,
+        AlterTable, AlterTableAction, CompositeType, EnumType, Function, MatView, Privilege,
+        Sequence, Table, TableConstraint, TableIndex, TableOwner, TableRls, Trigger, View,
     },
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader, SqlLoader,
@@ -145,8 +145,9 @@ impl SchemaLoader for SqlLoader {
                 NodeRef::CreateSchemaStmt(_schema) => {
                     info!("ignoring schema");
                 }
-                NodeRef::CreateSeqStmt(_seq) => {
-                    info!("ignore seq for now");
+                NodeRef::CreateSeqStmt(seq) => {
+                    let item: Sequence = seq.try_into()?;
+                    map_insert_schema!(data.sequences, item);
                 }
                 NodeRef::CreateForeignTableStmt(_table) => {
                     info!("ignore foreign table for now");
