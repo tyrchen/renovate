@@ -22,6 +22,7 @@ pub use repo::git::{BumpVersion, GitRepo};
 pub trait SchemaLoader {
     /// Load the sql file(s) to a DatabaseSchema
     async fn load(&self) -> Result<DatabaseSchema>;
+    async fn load_sql(&self) -> Result<String>;
 }
 
 #[async_trait]

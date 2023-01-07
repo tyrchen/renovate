@@ -18,6 +18,11 @@ use tracing::info;
 #[async_trait]
 impl SchemaLoader for LocalRepo {
     async fn load(&self) -> Result<DatabaseSchema> {
+        let sql = self.load_sql().await?;
+        SqlLoader(sql).load().await
+    }
+
+    async fn load_sql(&self) -> Result<String> {
         // load all the .sql files in subdirectories except the "_meta" directory
         let glob_path = self.path.join("**/*.sql");
         let files = glob(glob_path.as_os_str().to_str().unwrap())?
@@ -37,8 +42,7 @@ impl SchemaLoader for LocalRepo {
         // parse the sql to see if the syntax is correct
         let ret = pg_query::parse(&sql)?;
         let sql = ret.deparse()?;
-
-        SqlLoader(sql).load().await
+        Ok(sql)
     }
 }
 
@@ -46,6 +50,11 @@ impl SchemaLoader for LocalRepo {
 impl SchemaLoader for RemoteRepo {
     /// run pg_dump us async process and get the output sql
     async fn load(&self) -> anyhow::Result<crate::DatabaseSchema> {
+        let sql = self.load_sql().await?;
+        SqlLoader(sql).load().await
+    }
+
+    async fn load_sql(&self) -> anyhow::Result<String> {
         let output = async_process::Command::new("pg_dump")
             .arg("-s")
             .arg(&self.url)
@@ -57,7 +66,8 @@ impl SchemaLoader for RemoteRepo {
         }
 
         let sql = String::from_utf8(output.stdout)?;
-        SqlLoader(sql).load().await
+        println!("{}", sql);
+        Ok(sql)
     }
 }
 
@@ -156,5 +166,9 @@ impl SchemaLoader for SqlLoader {
             }
         }
         Ok(data)
+    }
+
+    async fn load_sql(&self) -> anyhow::Result<String> {
+        Ok(self.0.clone())
     }
 }
