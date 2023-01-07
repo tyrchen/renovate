@@ -111,7 +111,7 @@ impl SchemaLoader for SqlLoader {
                         }
                         AlterTableAction::Sequence(_) => {
                             let sequence: TableSequence = item.try_into()?;
-                            map_insert_schema!(data.table_sequences, sequence);
+                            map_insert_relation!(data.table_sequences, sequence);
                         }
                         AlterTableAction::Rls => {
                             let rls: TableRls = item.try_into()?;

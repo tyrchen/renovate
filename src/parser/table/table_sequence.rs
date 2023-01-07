@@ -1,5 +1,5 @@
 use crate::{
-    parser::{AlterTable, AlterTableAction, SchemaId, SequenceInfo, TableSequence},
+    parser::{AlterTable, AlterTableAction, RelationId, SchemaId, SequenceInfo, TableSequence},
     NodeItem,
 };
 use pg_query::{protobuf::AlterTableStmt, NodeEnum, NodeRef};
@@ -28,7 +28,7 @@ impl NodeItem for TableSequence {
     fn revert(&self) -> anyhow::Result<NodeEnum> {
         let sql = format!(
             "ALTER TABLE {} ALTER COLUMN {} DROP DEFAULT",
-            self.id, self.column
+            self.id.schema_id, self.id.name
         );
         let parsed = pg_query::parse(&sql)?;
         let node = parsed.protobuf.nodes()[0].0;
@@ -51,11 +51,8 @@ impl TryFrom<AlterTable> for TableSequence {
 
 impl TableSequence {
     fn new(id: SchemaId, info: SequenceInfo, node: NodeEnum) -> Self {
-        Self {
-            id,
-            column: info.column,
-            node,
-        }
+        let id = RelationId::new_with(id, info.column);
+        Self { id, node }
     }
 }
 
@@ -68,8 +65,8 @@ mod tests {
     fn alter_table_set_default_sequence_should_parse() {
         let sql = "ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass)";
         let parsed: TableSequence = sql.parse().unwrap();
-        assert_eq!(parsed.id.to_string(), "public.users");
-        assert_eq!(parsed.column, "id");
+        assert_eq!(parsed.id.schema_id.to_string(), "public.users");
+        assert_eq!(parsed.id.name, "id");
     }
 
     #[test]

@@ -1,4 +1,7 @@
-use crate::{utils::create_diff, Differ, MigrationPlanner, NodeDiff, NodeItem};
+use crate::{
+    utils::{create_diff, create_diff_added, create_diff_removed},
+    Differ, MigrationPlanner, NodeDiff, NodeItem,
+};
 
 impl<T> Differ for T
 where
@@ -26,20 +29,25 @@ where
     }
 }
 
-impl<T> NodeDiff<T> {
+impl<T> NodeDiff<T>
+where
+    T: NodeItem,
+{
     pub fn with_old(old: T) -> Self {
+        let diff = create_diff_removed(&old).unwrap();
         Self {
             old: Some(old),
             new: None,
-            diff: "".to_owned(),
+            diff,
         }
     }
 
     pub fn with_new(new: T) -> Self {
+        let diff = create_diff_added(&new).unwrap();
         Self {
             old: None,
             new: Some(new),
-            diff: "".to_owned(),
+            diff,
         }
     }
 }

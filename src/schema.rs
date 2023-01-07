@@ -1,7 +1,4 @@
-use crate::{
-    utils::{create_diff_added, create_diff_removed},
-    DatabaseSchema, Differ, MigrationPlanner, NodeDiff, NodeItem,
-};
+use crate::{DatabaseSchema, Differ, MigrationPlanner, NodeDiff, NodeItem};
 use anyhow::Result;
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -118,7 +115,7 @@ where
             let (id, t) = (v.id(), v.type_name());
             let diff = NodeDiff::with_new(v);
             if verbose && atty::is(atty::Stream::Stdout) {
-                println!("{} {} is added:\n{}", t, id, diff.diff);
+                println!("{} {} is added:\n\n{}", t, id, diff.diff);
             }
             migrations.extend(diff.plan()?);
         }
@@ -128,7 +125,7 @@ where
             let (id, t) = (v.id(), v.type_name());
             let diff = NodeDiff::with_old(v);
             if verbose && atty::is(atty::Stream::Stdout) {
-                println!("{} {} is removed:\n{}", t, id, diff.diff);
+                println!("{} {} is removed:\n\n{}", t, id, diff.diff);
             }
             migrations.extend(diff.plan()?);
         }
@@ -162,7 +159,7 @@ where
                     "{} {} is added:\n\n{}",
                     item.type_name(),
                     item.id(),
-                    create_diff_added(item)?,
+                    diff.diff,
                 );
             }
             migrations.extend(diff.plan()?);
@@ -179,7 +176,7 @@ where
                     "{} {} is removed:\n\n{}",
                     item.type_name(),
                     item.id(),
-                    create_diff_removed(item)?,
+                    diff.diff,
                 );
             }
             migrations.extend(diff.plan()?);

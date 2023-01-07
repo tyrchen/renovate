@@ -49,7 +49,7 @@ pub struct DatabaseSchema {
     // table level objects
     pub table_indexes: BTreeMap<SchemaId, BTreeMap<String, TableIndex>>,
     pub table_constraints: BTreeMap<SchemaId, BTreeMap<String, TableConstraint>>,
-    pub table_sequences: BTreeMap<String, BTreeMap<String, TableSequence>>,
+    pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
     pub table_policies: BTreeMap<SchemaId, Vec<TablePolicy>>,
     pub table_rls: BTreeMap<SchemaId, TableRls>,
     pub table_owners: BTreeMap<SchemaId, TableOwner>,
@@ -163,8 +163,7 @@ pub struct Sequence {
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TableSequence {
-    pub id: SchemaId,
-    pub column: String,
+    pub id: RelationId,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
 }

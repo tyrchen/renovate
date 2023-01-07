@@ -1,8 +1,5 @@
-use std::fs;
-
-use crate::{utils::load_config, GitRepo, LocalRepo, RemoteRepo, SchemaLoader, SqlSaver};
-
 use super::{Args, CommandExecutor};
+use crate::{utils::load_config, GitRepo, LocalRepo, RemoteRepo, SchemaLoader, SqlSaver};
 use clap_utils::prelude::*;
 
 #[derive(Parser, Debug, Clone)]
@@ -21,10 +18,6 @@ impl CommandExecutor for SchemaNormalizeCommand {
 
         let local_repo = LocalRepo::new(&config.output.path);
         let sql = local_repo.load_sql().await?;
-        // remove all existing sql files in the local repo
-        for file in local_repo.files()? {
-            fs::remove_file(file)?;
-        }
 
         let repo = RemoteRepo::new(&config.url);
         let schema = repo.normalize(&sql).await?;

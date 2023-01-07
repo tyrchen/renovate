@@ -1,6 +1,7 @@
 use crate::{
     config::{RenovateFormatConfig, RenovateOutputConfig},
-    DatabaseSchema, MigrationPlanner, NodeDiff, NodeItem, SqlSaver,
+    parser::SchemaId,
+    DatabaseSchema, LocalRepo, MigrationPlanner, NodeDiff, NodeItem, SqlSaver,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -11,6 +12,12 @@ use tokio::fs;
 impl SqlSaver for DatabaseSchema {
     async fn save(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
         use crate::config::Layout;
+
+        // remove all existing sql files in the local repo
+        let local_repo = LocalRepo::new(&config.path);
+        for file in local_repo.files()? {
+            fs::remove_file(file).await?;
+        }
 
         match config.layout {
             Layout::Normal => self.normal(config).await,
@@ -29,17 +36,22 @@ impl DatabaseSchema {
     }
 
     pub async fn nested(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
-        write_schema_files(&self.composite_types, "types", "01", config).await?;
-        write_schema_files(&self.enum_types, "enums", "02", config).await?;
+        write_schema_files(&self.composite_types, "types", "01", vec![], config).await?;
+        write_schema_files(&self.enum_types, "enums", "02", vec![], config).await?;
 
-        write_schema_files(&self.sequences, "sequences", "03", config).await?;
-        write_schema_files(&self.tables, "tables", "04", config).await?;
-        write_schema_file(&self.table_sequences, "table_sequences", "05", config).await?;
-        write_schema_files(&self.table_constraints, "table_constraints", "06", config).await?;
-        write_schema_files(&self.table_indexes, "table_indexes", "07", config).await?;
-        write_schema_files(&self.views, "views", "08", config).await?;
-        write_schema_files(&self.mviews, "mviews", "09", config).await?;
-        write_schema_files(&self.functions, "functions", "10", config).await?;
+        write_schema_files(&self.sequences, "sequences", "03", vec![], config).await?;
+        write_schema_files(
+            &self.tables,
+            "tables",
+            "04",
+            self.table_embedded_resources(),
+            config,
+        )
+        .await?;
+
+        write_schema_files(&self.views, "views", "08", vec![], config).await?;
+        write_schema_files(&self.mviews, "mviews", "09", vec![], config).await?;
+        write_schema_files(&self.functions, "functions", "10", vec![], config).await?;
 
         write_single_file(&self.triggers, "triggers", "11", config).await?;
         write_single_file(&self.privileges, "privileges", "12", config).await?;
@@ -48,17 +60,22 @@ impl DatabaseSchema {
     }
 
     pub async fn normal(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
-        write_schema_file(&self.composite_types, "types", "01", config).await?;
-        write_schema_file(&self.enum_types, "enums", "02", config).await?;
+        write_schema_file(&self.composite_types, "types", "01", vec![], config).await?;
+        write_schema_file(&self.enum_types, "enums", "02", vec![], config).await?;
 
-        write_schema_file(&self.sequences, "sequences", "03", config).await?;
-        write_schema_file(&self.tables, "tables", "04", config).await?;
-        write_schema_file(&self.table_sequences, "table_sequences", "05", config).await?;
-        write_schema_file(&self.table_constraints, "table_constraints", "06", config).await?;
-        write_schema_file(&self.table_indexes, "table_indexes", "07", config).await?;
-        write_schema_file(&self.views, "views", "08", config).await?;
-        write_schema_file(&self.mviews, "mviews", "09", config).await?;
-        write_schema_file(&self.functions, "functions", "10", config).await?;
+        write_schema_file(&self.sequences, "sequences", "03", vec![], config).await?;
+        write_schema_file(
+            &self.tables,
+            "tables",
+            "04",
+            self.table_embedded_resources(),
+            config,
+        )
+        .await?;
+
+        write_schema_file(&self.views, "views", "08", vec![], config).await?;
+        write_schema_file(&self.mviews, "mviews", "09", vec![], config).await?;
+        write_schema_file(&self.functions, "functions", "10", vec![], config).await?;
 
         write_single_file(&self.triggers, "triggers", "11", config).await?;
         write_single_file(&self.privileges, "privileges", "12", config).await?;
@@ -79,6 +96,14 @@ impl DatabaseSchema {
         };
 
         Ok(())
+    }
+
+    fn table_embedded_resources(&self) -> Vec<BTreeMap<SchemaId, BTreeMap<String, String>>> {
+        vec![
+            convert(&self.table_sequences),
+            convert(&self.table_constraints),
+            convert(&self.table_indexes),
+        ]
     }
 }
 
@@ -105,51 +130,84 @@ impl fmt::Display for DatabaseSchema {
     }
 }
 
-async fn write_schema_files<K, T>(
-    source: &BTreeMap<K, BTreeMap<String, T>>,
+async fn write_schema_files<T>(
+    source: &BTreeMap<String, BTreeMap<String, T>>,
     name: &str,
     prefix: &str,
+    embedded_sources: Vec<BTreeMap<SchemaId, BTreeMap<String, String>>>,
     config: &RenovateOutputConfig,
 ) -> Result<()>
 where
-    K: Hash + Eq + Ord + ToString + Clone + 'static,
     T: NodeItem + Clone + FromStr<Err = anyhow::Error> + PartialEq + Eq + 'static,
     NodeDiff<T>: MigrationPlanner<Migration = String>,
 {
     for (schema, items) in source {
-        let schema = schema.to_string();
-        let schema = schema.split('.').next().unwrap();
-
         let path = config.path.join(schema);
         fs::create_dir_all(&path).await?;
         for (n, content) in items {
             let p = path.join(name);
             fs::create_dir_all(&p).await?;
             let filename = p.join(format!("{}_{}.sql", prefix, n));
-            let content = format!("{};\n", content.to_string());
+            let item_content = format!("{};\n\n", content.to_string());
+            let content = if embedded_sources.is_empty() {
+                item_content
+            } else {
+                format!(
+                    "{}{}",
+                    item_content,
+                    join_embedded_sources(SchemaId::new(schema, n), &embedded_sources)
+                )
+            };
+
             DatabaseSchema::write(&filename, &content, config.format).await?;
         }
     }
     Ok(())
 }
 
-async fn write_schema_file<K, T>(
-    source: &BTreeMap<K, BTreeMap<String, T>>,
+fn join_embedded_sources(
+    id: SchemaId,
+    embedded_sources: &[BTreeMap<SchemaId, BTreeMap<String, String>>],
+) -> String {
+    let mut result = String::new();
+    for source in embedded_sources {
+        if let Some(items) = source.get(&id) {
+            result.push_str(&join_items(items));
+        }
+    }
+    result
+}
+
+async fn write_schema_file<T>(
+    source: &BTreeMap<String, BTreeMap<String, T>>,
     name: &str,
     prefix: &str,
+    embedded_sources: Vec<BTreeMap<SchemaId, BTreeMap<String, String>>>,
     config: &RenovateOutputConfig,
 ) -> Result<()>
 where
-    K: Hash + Eq + Ord + ToString + Clone + 'static,
     T: NodeItem + Clone + FromStr<Err = anyhow::Error> + PartialEq + Eq + 'static,
     NodeDiff<T>: MigrationPlanner<Migration = String>,
 {
     for (schema, items) in source {
-        let schema = schema.to_string();
-        let schema = schema.split('.').next().unwrap();
         let path = config.path.join(schema);
         fs::create_dir_all(&path).await?;
-        let content = join_items(items);
+        let mut content = String::new();
+        for (n, item) in items {
+            let item_content = format!("{};\n\n", item.to_string());
+            let s = if embedded_sources.is_empty() {
+                item_content
+            } else {
+                format!(
+                    "{}{}",
+                    item_content,
+                    join_embedded_sources(SchemaId::new(schema, n), &embedded_sources)
+                )
+            };
+
+            content.push_str(&s);
+        }
+
         let filename = path.join(format!("{}_{}.sql", prefix, name));
         DatabaseSchema::write(&filename, &content, config.format).await?;
     }
@@ -176,7 +234,7 @@ where
 
 fn join_items<T>(source: &BTreeMap<String, T>) -> String
 where
-    T: NodeItem,
+    T: ToString,
 {
     let mut dest = String::new();
     for v in source.values() {
@@ -195,4 +253,24 @@ where
     for items in source.values() {
         dest.push_str(&join_items(items));
     }
+}
+
+fn convert<T>(
+    source: &BTreeMap<SchemaId, BTreeMap<String, T>>,
+) -> BTreeMap<SchemaId, BTreeMap<String, String>>
+where
+    T: NodeItem + Clone + PartialEq + Eq + 'static,
+{
+    source
+        .clone()
+        .into_iter()
+        .map(|(k, v)| {
+            (
+                k,
+                v.into_iter()
+                    .map(|(k1, v1)| (k1, v1.to_string()))
+                    .collect::<BTreeMap<String, String>>(),
+            )
+        })
+        .collect::<BTreeMap<SchemaId, _>>()
 }
