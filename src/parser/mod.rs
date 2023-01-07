@@ -49,7 +49,7 @@ pub struct DatabaseSchema {
     // table level objects
     pub table_indexes: BTreeMap<SchemaId, BTreeMap<String, TableIndex>>,
     pub table_constraints: BTreeMap<SchemaId, BTreeMap<String, TableConstraint>>,
-    pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
+    pub table_sequences: BTreeMap<String, BTreeMap<String, TableSequence>>,
     pub table_policies: BTreeMap<SchemaId, Vec<TablePolicy>>,
     pub table_rls: BTreeMap<SchemaId, TableRls>,
     pub table_owners: BTreeMap<SchemaId, TableOwner>,
@@ -160,17 +160,18 @@ pub struct Sequence {
     pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TableSequence {
-    pub id: RelationId,
-    pub seq: Sequence,
-    pub info: SequenceInfo,
+    pub id: SchemaId,
+    pub column: String,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct SequenceInfo {
-    pub id: RelationId,
     pub column: String,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
@@ -255,6 +256,7 @@ pub enum AlterTableAction {
     Constraint(Box<ConstraintInfo>),
     Rls,
     Owner(String),
+    Sequence(Box<SequenceInfo>),
     Unsupported,
 }
 

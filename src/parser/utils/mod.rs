@@ -5,7 +5,7 @@ pub mod parsec;
 use itertools::Itertools;
 use pg_query::Node;
 
-pub use node::{node_to_embed_constraint, node_to_string};
+pub use node::{node_enum_to_string, node_to_embed_constraint, node_to_string};
 
 // pub fn get_node_str(n: &Node) -> Option<&str> {
 //     match n.node.as_ref() {

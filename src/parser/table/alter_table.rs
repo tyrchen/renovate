@@ -1,5 +1,5 @@
-use crate::parser::ConstraintInfo;
 use crate::parser::{AlterTable, AlterTableAction, SchemaId};
+use crate::parser::{ConstraintInfo, SequenceInfo};
 use anyhow::{anyhow, Context};
 use pg_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType},
@@ -33,8 +33,7 @@ impl TryFrom<&AlterTableCmd> for AlterTableAction {
     type Error = anyhow::Error;
     fn try_from(cmd: &AlterTableCmd) -> Result<Self, Self::Error> {
         let node = cmd.def.as_ref().and_then(|n| n.node.as_ref());
-        let node_type =
-            AlterTableType::from_i32(cmd.subtype).ok_or_else(|| anyhow!("no subtype"))?;
+        let node_type = cmd.subtype();
 
         match (node_type, node) {
             (AlterTableType::AtAddConstraint, Some(NodeEnum::Constraint(constraint))) => {
@@ -49,6 +48,13 @@ impl TryFrom<&AlterTableCmd> for AlterTableAction {
                 Ok(Self::Owner(owner.rolename.clone()))
             }
             (AlterTableType::AtEnableRowSecurity, None) => Ok(Self::Rls),
+            (AlterTableType::AtColumnDefault, Some(n)) => {
+                let info = SequenceInfo {
+                    column: cmd.name.clone(),
+                    node: n.clone(),
+                };
+                Ok(Self::Sequence(Box::new(info)))
+            }
             (ty, node) => {
                 warn!("unhandled alter table action: {:?} {:?}", ty, node);
                 Ok(Self::Unsupported)

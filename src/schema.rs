@@ -42,6 +42,11 @@ impl DatabaseSchema {
 
         // diff on table related stuff
         migrations.extend(schema_diff(
+            &self.table_sequences,
+            &other.table_sequences,
+            verbose,
+        )?);
+        migrations.extend(schema_diff(
             &self.table_constraints,
             &other.table_constraints,
             verbose,

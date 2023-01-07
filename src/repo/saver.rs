@@ -29,37 +29,39 @@ impl DatabaseSchema {
     }
 
     pub async fn nested(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
-        write_schema_files(&self.composite_types, "types", config).await?;
-        write_schema_files(&self.enum_types, "enums", config).await?;
+        write_schema_files(&self.composite_types, "types", "01", config).await?;
+        write_schema_files(&self.enum_types, "enums", "02", config).await?;
 
-        write_schema_files(&self.sequences, "sequences", config).await?;
-        write_schema_files(&self.tables, "tables", config).await?;
-        write_schema_files(&self.table_constraints, "constraints", config).await?;
-        write_schema_files(&self.table_indexes, "indexes", config).await?;
-        write_schema_files(&self.views, "views", config).await?;
-        write_schema_files(&self.mviews, "mviews", config).await?;
-        write_schema_files(&self.functions, "functions", config).await?;
+        write_schema_files(&self.sequences, "sequences", "03", config).await?;
+        write_schema_files(&self.tables, "tables", "04", config).await?;
+        write_schema_file(&self.table_sequences, "table_sequences", "05", config).await?;
+        write_schema_files(&self.table_constraints, "table_constraints", "06", config).await?;
+        write_schema_files(&self.table_indexes, "table_indexes", "07", config).await?;
+        write_schema_files(&self.views, "views", "08", config).await?;
+        write_schema_files(&self.mviews, "mviews", "09", config).await?;
+        write_schema_files(&self.functions, "functions", "10", config).await?;
 
-        write_single_file(&self.triggers, "triggers", config).await?;
-        write_single_file(&self.privileges, "privileges", config).await?;
+        write_single_file(&self.triggers, "triggers", "11", config).await?;
+        write_single_file(&self.privileges, "privileges", "12", config).await?;
 
         Ok(())
     }
 
     pub async fn normal(&self, config: &RenovateOutputConfig) -> anyhow::Result<()> {
-        write_schema_file(&self.composite_types, "types", config).await?;
-        write_schema_file(&self.enum_types, "enums", config).await?;
+        write_schema_file(&self.composite_types, "types", "01", config).await?;
+        write_schema_file(&self.enum_types, "enums", "02", config).await?;
 
-        write_schema_file(&self.sequences, "sequences", config).await?;
-        write_schema_file(&self.tables, "tables", config).await?;
-        write_schema_file(&self.table_constraints, "constraints", config).await?;
-        write_schema_file(&self.table_indexes, "indexes", config).await?;
-        write_schema_file(&self.views, "views", config).await?;
-        write_schema_file(&self.mviews, "mviews", config).await?;
-        write_schema_file(&self.functions, "functions", config).await?;
+        write_schema_file(&self.sequences, "sequences", "03", config).await?;
+        write_schema_file(&self.tables, "tables", "04", config).await?;
+        write_schema_file(&self.table_sequences, "table_sequences", "05", config).await?;
+        write_schema_file(&self.table_constraints, "table_constraints", "06", config).await?;
+        write_schema_file(&self.table_indexes, "table_indexes", "07", config).await?;
+        write_schema_file(&self.views, "views", "08", config).await?;
+        write_schema_file(&self.mviews, "mviews", "09", config).await?;
+        write_schema_file(&self.functions, "functions", "10", config).await?;
 
-        write_single_file(&self.triggers, "triggers", config).await?;
-        write_single_file(&self.privileges, "privileges", config).await?;
+        write_single_file(&self.triggers, "triggers", "11", config).await?;
+        write_single_file(&self.privileges, "privileges", "12", config).await?;
 
         Ok(())
     }
@@ -89,6 +91,7 @@ impl fmt::Display for DatabaseSchema {
         join_nested_items(&self.enum_types, &mut result);
         join_nested_items(&self.sequences, &mut result);
         join_nested_items(&self.tables, &mut result);
+        join_nested_items(&self.table_sequences, &mut result);
         join_nested_items(&self.table_constraints, &mut result);
         join_nested_items(&self.table_indexes, &mut result);
         join_nested_items(&self.views, &mut result);
@@ -105,6 +108,7 @@ impl fmt::Display for DatabaseSchema {
 async fn write_schema_files<K, T>(
     source: &BTreeMap<K, BTreeMap<String, T>>,
     name: &str,
+    prefix: &str,
     config: &RenovateOutputConfig,
 ) -> Result<()>
 where
@@ -121,7 +125,7 @@ where
         for (n, content) in items {
             let p = path.join(name);
             fs::create_dir_all(&p).await?;
-            let filename = p.join(format!("{}.sql", n));
+            let filename = p.join(format!("{}_{}.sql", prefix, n));
             let content = format!("{};\n", content.to_string());
             DatabaseSchema::write(&filename, &content, config.format).await?;
         }
@@ -132,6 +136,7 @@ where
 async fn write_schema_file<K, T>(
     source: &BTreeMap<K, BTreeMap<String, T>>,
     name: &str,
+    prefix: &str,
     config: &RenovateOutputConfig,
 ) -> Result<()>
 where
@@ -145,7 +150,7 @@ where
         let path = config.path.join(schema);
         fs::create_dir_all(&path).await?;
         let content = join_items(items);
-        let filename = path.join(format!("{}.sql", name));
+        let filename = path.join(format!("{}_{}.sql", prefix, name));
         DatabaseSchema::write(&filename, &content, config.format).await?;
     }
 
@@ -155,6 +160,7 @@ where
 async fn write_single_file<T>(
     source: &BTreeMap<String, T>,
     name: &str,
+    prefix: &str,
     config: &RenovateOutputConfig,
 ) -> Result<()>
 where
@@ -162,7 +168,7 @@ where
 {
     let content = join_items(source);
     if !content.is_empty() {
-        let path = config.path.join(format!("{}.sql", name));
+        let path = config.path.join(format!("{}_{}.sql", prefix, name));
         DatabaseSchema::write(&path, &content, config.format).await?;
     }
     Ok(())

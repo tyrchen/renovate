@@ -2,7 +2,8 @@ use crate::{
     map_insert_relation, map_insert_schema,
     parser::{
         AlterTable, AlterTableAction, CompositeType, EnumType, Function, MatView, Privilege,
-        Sequence, Table, TableConstraint, TableIndex, TableOwner, TableRls, Trigger, View,
+        Sequence, Table, TableConstraint, TableIndex, TableOwner, TableRls, TableSequence, Trigger,
+        View,
     },
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader, SqlLoader,
@@ -25,11 +26,12 @@ impl SchemaLoader for LocalRepo {
     async fn load_sql(&self) -> Result<String> {
         // load all the .sql files in subdirectories except the "_meta" directory
         let glob_path = self.path.join("**/*.sql");
-        let files = glob(glob_path.as_os_str().to_str().unwrap())?
+        let mut files = glob(glob_path.as_os_str().to_str().unwrap())?
             .filter_map(Result::ok)
             .filter(|p| ignore_file(p, "_"))
             .collect::<Vec<PathBuf>>();
 
+        files.sort();
         // concatenate all the sql files into one string
         let mut sql = String::with_capacity(16 * 1024);
         for file in files {
@@ -113,6 +115,10 @@ impl SchemaLoader for SqlLoader {
                         AlterTableAction::Constraint(_) => {
                             let constraint: TableConstraint = item.try_into()?;
                             map_insert_relation!(data.table_constraints, constraint);
+                        }
+                        AlterTableAction::Sequence(_) => {
+                            let sequence: TableSequence = item.try_into()?;
+                            map_insert_schema!(data.table_sequences, sequence);
                         }
                         AlterTableAction::Rls => {
                             let rls: TableRls = item.try_into()?;

@@ -4,6 +4,7 @@ mod table_constraint;
 mod table_index;
 mod table_owner;
 mod table_rls;
+mod table_sequence;
 
 use super::{Column, ConstraintInfo, SchemaId, Table};
 use crate::{MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
