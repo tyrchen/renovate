@@ -64,7 +64,7 @@ pub(crate) async fn load_config() -> Result<RenovateConfig> {
 }
 
 /// generate the diff between two strings. TODO: this is just for console output for now
-fn diff_text(text1: &str, text2: &str) -> Result<String> {
+pub(crate) fn diff_text(text1: &str, text2: &str) -> Result<String> {
     let mut output = String::new();
     let diff = TextDiff::from_lines(text1, text2);
 

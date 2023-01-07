@@ -16,7 +16,9 @@ where
             anyhow::bail!("can't diff {} and {}", old_id, new_id);
         }
 
-        if self != new {
+        let self_str = self.to_string();
+        let new_str = new.to_string();
+        if self != new && self_str != new_str {
             let diff = create_diff(self, new)?;
             Ok(Some(NodeDiff {
                 old: Some(self.clone()),

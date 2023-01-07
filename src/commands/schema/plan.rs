@@ -1,6 +1,6 @@
 use super::{Args, CommandExecutor};
 use crate::{utils::load_config, LocalRepo, RemoteRepo, SchemaLoader};
-use clap_utils::prelude::*;
+use clap_utils::{highlight_text, prelude::*};
 
 #[derive(Parser, Debug, Clone)]
 pub struct SchemaPlanCommand {}
@@ -26,7 +26,12 @@ pub(super) async fn generate_plan() -> Result<Vec<String>> {
 
     println!("The following SQLs will be applied:\n");
     for item in plan.iter() {
-        println!("  {}", item);
+        let formatted = sqlformat::format(
+            item,
+            &Default::default(),
+            config.output.format.unwrap_or_default().into(),
+        );
+        println!("{};", highlight_text(&formatted, "sql", None)?);
     }
     println!("\n");
     Ok(plan)

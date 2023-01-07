@@ -39,7 +39,14 @@ impl DatabaseSchema {
         write_schema_files(&self.composite_types, "types", "01", vec![], config).await?;
         write_schema_files(&self.enum_types, "enums", "02", vec![], config).await?;
 
-        write_schema_files(&self.sequences, "sequences", "03", vec![], config).await?;
+        write_schema_files(
+            &self.sequences,
+            "sequences",
+            "03",
+            self.sequence_embedded_resources(),
+            config,
+        )
+        .await?;
         write_schema_files(
             &self.tables,
             "tables",
@@ -63,7 +70,14 @@ impl DatabaseSchema {
         write_schema_file(&self.composite_types, "types", "01", vec![], config).await?;
         write_schema_file(&self.enum_types, "enums", "02", vec![], config).await?;
 
-        write_schema_file(&self.sequences, "sequences", "03", vec![], config).await?;
+        write_schema_file(
+            &self.sequences,
+            "sequences",
+            "03",
+            self.sequence_embedded_resources(),
+            config,
+        )
+        .await?;
         write_schema_file(
             &self.tables,
             "tables",
@@ -106,6 +120,10 @@ impl DatabaseSchema {
             convert1(&self.table_rls),
             convert1(&self.table_owners),
         ]
+    }
+
+    fn sequence_embedded_resources(&self) -> Vec<BTreeMap<SchemaId, BTreeMap<String, String>>> {
+        vec![convert1(&self.table_owners)]
     }
 }
 

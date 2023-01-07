@@ -17,7 +17,8 @@ impl CommandExecutor for SchemaNormalizeCommand {
         }
 
         let local_repo = LocalRepo::new(&config.output.path);
-        let sql = local_repo.load_sql().await?;
+        let schema = local_repo.load().await?;
+        let sql = schema.sql(true);
 
         let repo = RemoteRepo::new(&config.url);
         let schema = repo.normalize(&sql).await?;

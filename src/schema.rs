@@ -26,18 +26,30 @@ impl DatabaseSchema {
         self.schemas = names;
     }
 
+    pub fn sql(&self, include_schema: bool) -> String {
+        let mut sql = String::new();
+        if include_schema {
+            for schema in &self.schemas {
+                sql.push_str(&format!("CREATE SCHEMA IF NOT EXISTS {};\n", schema));
+            }
+        }
+
+        format!("{}{}", sql, self)
+    }
+
     pub fn plan(&self, other: &Self, verbose: bool) -> anyhow::Result<Vec<String>> {
         let mut migrations: Vec<String> = Vec::new();
 
         // add schema names
         migrations.extend(schema_name_added(&self.schemas, &other.schemas)?);
 
-        // diff on types
+        // diff on composite types
         migrations.extend(schema_diff(
             &self.composite_types,
             &other.composite_types,
             verbose,
         )?);
+        migrations.extend(schema_diff(&self.enum_types, &other.enum_types, verbose)?);
         // diff on sequences
         migrations.extend(schema_diff(&self.sequences, &other.sequences, verbose)?);
         // diff on tables
