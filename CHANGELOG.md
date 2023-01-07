@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.9] - 2023-01-07
+
+[31a68c5](31a68c575ee30010b83cbfae362112e98484d34a)...[77043a7](77043a72c3b3d0fe439937525a343ad5eb095bda)
+
+### Features
+
+- Group sql when saving ([77043a7](77043a72c3b3d0fe439937525a343ad5eb095bda) - 2023-01-07 by Tyr Chen)
+
 ## [0.2.8] - 2023-01-07
 
 [4658050](4658050defc8020003f74da8ff90bb878d84bd15)...[31a68c5](31a68c575ee30010b83cbfae362112e98484d34a)
