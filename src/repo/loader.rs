@@ -66,7 +66,6 @@ impl SchemaLoader for RemoteRepo {
         }
 
         let sql = String::from_utf8(output.stdout)?;
-        println!("{}", sql);
         Ok(sql)
     }
 }
