@@ -166,6 +166,7 @@ impl SchemaLoader for SqlLoader {
                 }
             }
         }
+        data.update_schema_names();
         Ok(data)
     }
 

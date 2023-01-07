@@ -1,13 +1,32 @@
-use crate::{DatabaseSchema, Differ, MigrationPlanner, NodeDiff, NodeItem};
+use crate::{
+    utils::{create_diff_added, create_diff_removed},
+    DatabaseSchema, Differ, MigrationPlanner, NodeDiff, NodeItem,
+};
 use anyhow::Result;
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     str::FromStr,
 };
 
 impl DatabaseSchema {
+    pub fn update_schema_names(&mut self) {
+        let mut names = BTreeSet::new();
+        names.extend(self.extensions.keys().cloned());
+        names.extend(self.composite_types.keys().cloned());
+        names.extend(self.enum_types.keys().cloned());
+        names.extend(self.sequences.keys().cloned());
+        names.extend(self.tables.keys().cloned());
+        names.extend(self.views.keys().cloned());
+        names.extend(self.mviews.keys().cloned());
+        names.extend(self.functions.keys().cloned());
+        self.schemas = names;
+    }
+
     pub fn plan(&self, other: &Self, verbose: bool) -> anyhow::Result<Vec<String>> {
         let mut migrations: Vec<String> = Vec::new();
+
+        // add schema names
+        migrations.extend(schema_name_added(&self.schemas, &other.schemas)?);
 
         // diff on types
         migrations.extend(schema_diff(
@@ -15,6 +34,8 @@ impl DatabaseSchema {
             &other.composite_types,
             verbose,
         )?);
+        // diff on sequences
+        migrations.extend(schema_diff(&self.sequences, &other.sequences, verbose)?);
         // diff on tables
         migrations.extend(schema_diff(&self.tables, &other.tables, verbose)?);
         // diff on views
@@ -22,8 +43,33 @@ impl DatabaseSchema {
         // diff on functions
         migrations.extend(schema_diff(&self.functions, &other.functions, verbose)?);
 
+        // finally, drop the schema names
+        migrations.extend(schema_name_removed(&self.schemas, &other.schemas)?);
+
         Ok(migrations)
     }
+}
+
+fn schema_name_added(local: &BTreeSet<String>, remote: &BTreeSet<String>) -> Result<Vec<String>> {
+    let mut migrations: Vec<String> = Vec::new();
+
+    let added = local.difference(remote);
+    for key in added {
+        migrations.push(format!("CREATE SCHEMA {}", key));
+    }
+
+    Ok(migrations)
+}
+
+fn schema_name_removed(local: &BTreeSet<String>, remote: &BTreeSet<String>) -> Result<Vec<String>> {
+    let mut migrations: Vec<String> = Vec::new();
+
+    let removed = remote.difference(local);
+    for key in removed {
+        migrations.push(format!("DROP SCHEMA {}", key));
+    }
+
+    Ok(migrations)
 }
 
 fn schema_diff<T>(
@@ -89,15 +135,14 @@ where
     // process added
     let added = keys.difference(&other_keys);
     for key in added {
-        migrations.push(format!("CREATE SCHEMA {}", key));
         for item in local.get(*key).unwrap().values() {
             let diff = NodeDiff::with_new(item.clone());
             if verbose && atty::is(atty::Stream::Stdout) {
                 println!(
-                    "{} {} is added:\n{}",
+                    "{} {} is added:\n\n{}",
                     item.type_name(),
                     item.id(),
-                    diff.diff
+                    create_diff_added(item)?,
                 );
             }
             migrations.extend(diff.plan()?);
@@ -111,15 +156,14 @@ where
             let diff = NodeDiff::with_old(item.clone());
             if verbose && atty::is(atty::Stream::Stdout) {
                 println!(
-                    "{} {} is removed:\n{}",
+                    "{} {} is removed:\n\n{}",
                     item.type_name(),
                     item.id(),
-                    diff.diff
+                    create_diff_removed(item)?,
                 );
             }
             migrations.extend(diff.plan()?);
         }
-        migrations.push(format!("DROP SCHEMA {}", key));
     }
     Ok(migrations)
 }

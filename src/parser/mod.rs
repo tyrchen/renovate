@@ -30,9 +30,10 @@ pub struct RelationId {
 /// All the parsed information about a database
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DatabaseSchema {
-    pub extensions: BTreeMap<String, BTreeMap<String, Extension>>,
+    pub schemas: BTreeSet<String>,
 
     // schema level objects
+    pub extensions: BTreeMap<String, BTreeMap<String, Extension>>,
     pub composite_types: BTreeMap<String, BTreeMap<String, CompositeType>>,
     pub enum_types: BTreeMap<String, BTreeMap<String, EnumType>>,
     pub tables: BTreeMap<String, BTreeMap<String, Table>>,

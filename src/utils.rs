@@ -36,6 +36,24 @@ pub fn create_diff<T: NodeItem>(old: &T, new: &T) -> Result<String> {
     diff_text(&old, &new)
 }
 
+pub fn create_diff_added<T: NodeItem>(new: &T) -> Result<String> {
+    let format = RenovateFormatConfig::default().into();
+
+    let old = "".to_string();
+    let new = sqlformat::format(&new.to_string(), &Default::default(), format);
+
+    diff_text(&old, &new)
+}
+
+pub fn create_diff_removed<T: NodeItem>(old: &T) -> Result<String> {
+    let format = RenovateFormatConfig::default().into();
+
+    let old = sqlformat::format(&old.to_string(), &Default::default(), format);
+    let new = "".to_string();
+
+    diff_text(&old, &new)
+}
+
 pub(crate) async fn load_config() -> Result<RenovateConfig> {
     let config_file = Path::new("renovate.yml");
     if !config_file.exists() {

@@ -9,12 +9,12 @@ pub struct SchemaNormalizeCommand {}
 #[async_trait]
 impl CommandExecutor for SchemaNormalizeCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
-        {
-            let repo = GitRepo::open(".")?;
-            if repo.is_dirty() {
-                repo.commit("commit schema changes before nomalization")?;
-            }
-        }
+        // {
+        //     let repo = GitRepo::open(".")?;
+        //     if repo.is_dirty() {
+        //         repo.commit("commit schema changes before nomalization")?;
+        //     }
+        // }
         let config = load_config().await?;
         let local_repo = LocalRepo::new(&config.output.path);
         let repo = RemoteRepo::new(&config.url);
