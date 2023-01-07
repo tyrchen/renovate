@@ -24,14 +24,7 @@ impl SchemaLoader for LocalRepo {
     }
 
     async fn load_sql(&self) -> Result<String> {
-        // load all the .sql files in subdirectories except the "_meta" directory
-        let glob_path = self.path.join("**/*.sql");
-        let mut files = glob(glob_path.as_os_str().to_str().unwrap())?
-            .filter_map(Result::ok)
-            .filter(|p| ignore_file(p, "_"))
-            .collect::<Vec<PathBuf>>();
-
-        files.sort();
+        let files = self.files()?;
         // concatenate all the sql files into one string
         let mut sql = String::with_capacity(16 * 1024);
         for file in files {
@@ -177,5 +170,19 @@ impl SchemaLoader for SqlLoader {
 
     async fn load_sql(&self) -> anyhow::Result<String> {
         Ok(self.0.clone())
+    }
+}
+
+impl LocalRepo {
+    // load all the .sql files in subdirectories except the "_meta" directory
+    pub fn files(&self) -> Result<Vec<PathBuf>> {
+        let glob_path = self.path.join("**/*.sql");
+        let mut files = glob(glob_path.as_os_str().to_str().unwrap())?
+            .filter_map(Result::ok)
+            .filter(|p| ignore_file(p, "_"))
+            .collect::<Vec<PathBuf>>();
+
+        files.sort();
+        Ok(files)
     }
 }
