@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.7] - 2023-01-07
+
+[9a36034](9a360344c11fe77eb0c0a07337bc8656b24c5526)...[4658050](4658050defc8020003f74da8ff90bb878d84bd15)
+
+### Features
+
+- Support default constraint ([4658050](4658050defc8020003f74da8ff90bb878d84bd15) - 2023-01-07 by Tyr Chen)
+
 ## [0.2.6] - 2023-01-06
 
 [67bb303](67bb303518436845dbac8ab4ad321665e14501d5)...[9a36034](9a360344c11fe77eb0c0a07337bc8656b24c5526)
