@@ -138,23 +138,23 @@ impl SchemaLoader for SqlLoader {
                     info!("ignore comment");
                 }
                 NodeRef::CreateExtensionStmt(_ext) => {
-                    info!("ignore extension");
+                    info!("TODO: extension");
                 }
                 NodeRef::CreateSchemaStmt(_schema) => {
-                    info!("ignoring schema");
+                    info!("ignore schema creation statement since we already have the schema name");
                 }
                 NodeRef::CreateSeqStmt(seq) => {
                     let item: Sequence = seq.try_into()?;
                     map_insert_schema!(data.sequences, item);
                 }
                 NodeRef::CreateForeignTableStmt(_table) => {
-                    info!("ignore foreign table for now");
+                    info!("TODO: foreign table");
                 }
                 NodeRef::CreateForeignServerStmt(_server) => {
-                    info!("ignore foreign server for now");
+                    info!("TODO: foreign server");
                 }
                 NodeRef::CreateFdwStmt(_fdw) => {
-                    info!("ignore fwd for now");
+                    info!("TODO: fwd");
                 }
                 NodeRef::CreatePolicyStmt(_policy) => {
                     todo!()

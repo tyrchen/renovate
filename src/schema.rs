@@ -6,6 +6,12 @@ use std::{
     str::FromStr,
 };
 
+trait SchemaPlan {
+    fn diff_altered(&self, remote: &Self, verbose: bool) -> Result<Vec<String>>;
+    fn diff_added(&self, verbose: bool) -> Result<Vec<String>>;
+    fn diff_removed(&self, verbose: bool) -> Result<Vec<String>>;
+}
+
 impl DatabaseSchema {
     pub fn update_schema_names(&mut self) {
         let mut names = BTreeSet::new();
@@ -53,6 +59,12 @@ impl DatabaseSchema {
             &other.table_indexes,
             verbose,
         )?);
+        migrations.extend(schema_diff(&self.table_rls, &other.table_rls, verbose)?);
+        migrations.extend(schema_diff(
+            &self.table_owners,
+            &other.table_owners,
+            verbose,
+        )?);
 
         // diff on views
         migrations.extend(schema_diff(&self.views, &other.views, verbose)?);
@@ -62,6 +74,112 @@ impl DatabaseSchema {
         // finally, drop the schema names
         migrations.extend(schema_name_removed(&self.schemas, &other.schemas)?);
 
+        Ok(migrations)
+    }
+}
+
+impl<T> SchemaPlan for T
+where
+    T: NodeItem + Clone + FromStr<Err = anyhow::Error> + PartialEq + Eq + 'static,
+    NodeDiff<T>: MigrationPlanner<Migration = String>,
+{
+    fn diff_altered(&self, remote: &Self, verbose: bool) -> Result<Vec<String>> {
+        let diff = remote.diff(self)?;
+        if let Some(diff) = diff {
+            if verbose && atty::is(atty::Stream::Stdout) {
+                println!(
+                    "{} {} is changed:\n\n{}",
+                    self.type_name(),
+                    self.id(),
+                    diff.diff
+                );
+            }
+            diff.plan()
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    fn diff_added(&self, verbose: bool) -> Result<Vec<String>> {
+        let diff = NodeDiff::with_new(self.clone());
+        if verbose && atty::is(atty::Stream::Stdout) {
+            println!(
+                "{} {} is added:\n\n{}",
+                self.type_name(),
+                self.id(),
+                diff.diff,
+            );
+        }
+        diff.plan()
+    }
+
+    fn diff_removed(&self, verbose: bool) -> Result<Vec<String>> {
+        let diff = NodeDiff::with_old(self.clone());
+        if verbose && atty::is(atty::Stream::Stdout) {
+            println!(
+                "{} {} is removed:\n\n{}",
+                self.type_name(),
+                self.id(),
+                diff.diff,
+            );
+        }
+        diff.plan()
+    }
+}
+
+impl<T> SchemaPlan for BTreeMap<String, T>
+where
+    T: NodeItem + Clone + FromStr<Err = anyhow::Error> + PartialEq + Eq + 'static,
+    NodeDiff<T>: MigrationPlanner<Migration = String>,
+{
+    fn diff_altered(&self, remote: &Self, verbose: bool) -> Result<Vec<String>> {
+        let mut migrations: Vec<String> = Vec::new();
+        let keys: HashSet<_> = self.keys().collect();
+        let other_keys: HashSet<_> = remote.keys().collect();
+        let added = keys.difference(&other_keys);
+        for key in added {
+            let v = self.get(*key).unwrap().clone();
+            let (id, t) = (v.id(), v.type_name());
+            let diff = NodeDiff::with_new(v);
+            if verbose && atty::is(atty::Stream::Stdout) {
+                println!("{} {} is added:\n\n{}", t, id, diff.diff);
+            }
+            migrations.extend(diff.plan()?);
+        }
+        let removed = other_keys.difference(&keys);
+        for key in removed {
+            let v = remote.get(*key).unwrap().clone();
+            let (id, t) = (v.id(), v.type_name());
+            let diff = NodeDiff::with_old(v);
+            if verbose && atty::is(atty::Stream::Stdout) {
+                println!("{} {} is removed:\n\n{}", t, id, diff.diff);
+            }
+            migrations.extend(diff.plan()?);
+        }
+        let intersection = keys.intersection(&other_keys);
+        for key in intersection {
+            let local: T = self.get(*key).unwrap().to_string().parse()?;
+            let remote: T = remote.get(*key).unwrap().to_string().parse()?;
+            migrations.extend(local.diff_altered(&remote, verbose)?);
+        }
+
+        Ok(migrations)
+    }
+
+    fn diff_added(&self, verbose: bool) -> Result<Vec<String>> {
+        let mut migrations: Vec<String> = Vec::new();
+        for item in self.values() {
+            migrations.extend(item.diff_added(verbose)?);
+        }
+
+        Ok(migrations)
+    }
+
+    fn diff_removed(&self, verbose: bool) -> Result<Vec<String>> {
+        let mut migrations: Vec<String> = Vec::new();
+        for item in self.values() {
+            migrations.extend(item.diff_removed(verbose)?);
+        }
         Ok(migrations)
     }
 }
@@ -89,14 +207,13 @@ fn schema_name_removed(local: &BTreeSet<String>, remote: &BTreeSet<String>) -> R
 }
 
 fn schema_diff<K, T>(
-    local: &BTreeMap<K, BTreeMap<String, T>>,
-    remote: &BTreeMap<K, BTreeMap<String, T>>,
+    local: &BTreeMap<K, T>,
+    remote: &BTreeMap<K, T>,
     verbose: bool,
 ) -> Result<Vec<String>>
 where
     K: Hash + Eq + Ord,
-    T: NodeItem + Clone + FromStr<Err = anyhow::Error> + PartialEq + Eq + 'static,
-    NodeDiff<T>: MigrationPlanner<Migration = String>,
+    T: SchemaPlan,
 {
     let mut migrations: Vec<String> = Vec::new();
     let keys: HashSet<_> = local.keys().collect();
@@ -107,80 +224,21 @@ where
     for key in intersection {
         let local = local.get(*key).unwrap();
         let remote = remote.get(*key).unwrap();
-        let keys: HashSet<_> = local.keys().collect();
-        let other_keys: HashSet<_> = remote.keys().collect();
-        let added = keys.difference(&other_keys);
-        for key in added {
-            let v = local.get(*key).unwrap().clone();
-            let (id, t) = (v.id(), v.type_name());
-            let diff = NodeDiff::with_new(v);
-            if verbose && atty::is(atty::Stream::Stdout) {
-                println!("{} {} is added:\n\n{}", t, id, diff.diff);
-            }
-            migrations.extend(diff.plan()?);
-        }
-        let removed = other_keys.difference(&keys);
-        for key in removed {
-            let v = remote.get(*key).unwrap().clone();
-            let (id, t) = (v.id(), v.type_name());
-            let diff = NodeDiff::with_old(v);
-            if verbose && atty::is(atty::Stream::Stdout) {
-                println!("{} {} is removed:\n\n{}", t, id, diff.diff);
-            }
-            migrations.extend(diff.plan()?);
-        }
-        let intersection = keys.intersection(&other_keys);
-        for key in intersection {
-            let local: T = local.get(*key).unwrap().to_string().parse()?;
-            let remote: T = remote.get(*key).unwrap().to_string().parse()?;
-
-            let diff = remote.diff(&local)?;
-            if let Some(diff) = diff {
-                if verbose && atty::is(atty::Stream::Stdout) {
-                    println!(
-                        "{} {} is changed:\n\n{}",
-                        local.type_name(),
-                        local.id(),
-                        diff.diff
-                    );
-                }
-                migrations.extend(diff.plan()?);
-            }
-        }
+        migrations.extend(local.diff_altered(remote, verbose)?);
     }
 
     // process added
     let added = keys.difference(&other_keys);
     for key in added {
-        for item in local.get(*key).unwrap().values() {
-            let diff = NodeDiff::with_new(item.clone());
-            if verbose && atty::is(atty::Stream::Stdout) {
-                println!(
-                    "{} {} is added:\n\n{}",
-                    item.type_name(),
-                    item.id(),
-                    diff.diff,
-                );
-            }
-            migrations.extend(diff.plan()?);
-        }
+        let local = local.get(*key).unwrap();
+        migrations.extend(local.diff_added(verbose)?);
     }
 
     // process removed
     let removed = other_keys.difference(&keys);
     for key in removed {
-        for item in remote.get(*key).unwrap().values() {
-            let diff = NodeDiff::with_old(item.clone());
-            if verbose && atty::is(atty::Stream::Stdout) {
-                println!(
-                    "{} {} is removed:\n\n{}",
-                    item.type_name(),
-                    item.id(),
-                    diff.diff,
-                );
-            }
-            migrations.extend(diff.plan()?);
-        }
+        let remote = remote.get(*key).unwrap();
+        migrations.extend(remote.diff_removed(verbose)?);
     }
     Ok(migrations)
 }

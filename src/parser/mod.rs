@@ -50,7 +50,7 @@ pub struct DatabaseSchema {
     pub table_indexes: BTreeMap<SchemaId, BTreeMap<String, TableIndex>>,
     pub table_constraints: BTreeMap<SchemaId, BTreeMap<String, TableConstraint>>,
     pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
-    pub table_policies: BTreeMap<SchemaId, Vec<TablePolicy>>,
+    pub table_policies: BTreeMap<SchemaId, BTreeMap<String, TablePolicy>>,
     pub table_rls: BTreeMap<SchemaId, TableRls>,
     pub table_owners: BTreeMap<SchemaId, TableOwner>,
 

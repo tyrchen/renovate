@@ -103,6 +103,8 @@ impl DatabaseSchema {
             convert(&self.table_sequences),
             convert(&self.table_constraints),
             convert(&self.table_indexes),
+            convert1(&self.table_rls),
+            convert1(&self.table_owners),
         ]
     }
 }
@@ -269,6 +271,24 @@ where
                 k,
                 v.into_iter()
                     .map(|(k1, v1)| (k1, v1.to_string()))
+                    .collect::<BTreeMap<String, String>>(),
+            )
+        })
+        .collect::<BTreeMap<SchemaId, _>>()
+}
+
+fn convert1<T>(source: &BTreeMap<SchemaId, T>) -> BTreeMap<SchemaId, BTreeMap<String, String>>
+where
+    T: NodeItem + Clone + PartialEq + Eq + 'static,
+{
+    source
+        .clone()
+        .into_iter()
+        .map(|(k, v)| {
+            (
+                k.clone(),
+                [(k.name, v.to_string())]
+                    .into_iter()
                     .collect::<BTreeMap<String, String>>(),
             )
         })
