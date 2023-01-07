@@ -1,26 +1,21 @@
 mod macros;
+mod node;
 pub mod parsec;
 
-use super::ConstraintInfo;
 use itertools::Itertools;
-use pg_query::{Node, NodeEnum};
+use pg_query::Node;
 
-pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
-    match &node.node {
-        Some(NodeEnum::Constraint(v)) => ConstraintInfo::try_from(v.as_ref()).ok(),
-        _ => None,
-    }
-}
+pub use node::{node_to_embed_constraint, node_to_string};
 
-pub fn get_node_str(n: &Node) -> Option<&str> {
-    match n.node.as_ref() {
-        Some(NodeEnum::String(s)) => Some(s.str.as_str()),
-        _ => None,
-    }
-}
+// pub fn get_node_str(n: &Node) -> Option<&str> {
+//     match n.node.as_ref() {
+//         Some(NodeEnum::String(s)) => Some(s.str.as_str()),
+//         _ => None,
+//     }
+// }
 
 pub fn get_type_name(nodes: &[Node]) -> String {
-    nodes.iter().filter_map(get_node_str).join(".")
+    nodes.iter().filter_map(node_to_string).join(".")
 }
 
 #[allow(dead_code)]

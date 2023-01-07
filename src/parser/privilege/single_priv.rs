@@ -52,11 +52,11 @@ impl DeltaItem for SinglePriv {
         Ok(vec![node.deparse()?])
     }
 
-    fn alter(self, item: &Self::SqlNode, remote: Self) -> anyhow::Result<Vec<String>> {
+    fn alter(self, item: &Self::SqlNode, new: Self) -> anyhow::Result<Vec<String>> {
         let mut migrations = vec![];
         let sql = self.drop(item)?;
         migrations.extend(sql);
-        let sql = remote.create(item)?;
+        let sql = new.create(item)?;
         migrations.extend(sql);
         Ok(migrations)
     }

@@ -147,7 +147,7 @@ pub struct Column {
     pub id: RelationId,
     pub type_name: String,
     pub nullable: bool,
-    // pub default: Option<String>,
+    pub default: Option<ConstraintInfo>,
     pub constraints: BTreeSet<ConstraintInfo>,
 }
 

@@ -1,5 +1,5 @@
 use super::{
-    utils::{get_node_str, get_type_name},
+    utils::{get_type_name, node_to_string},
     Function, FunctionArg, SchemaId,
 };
 use crate::NodeItem;
@@ -59,12 +59,12 @@ impl TryFrom<&CreateFunctionStmt> for Function {
 }
 
 fn parse_id(nodes: &[Node], args: &[FunctionArg]) -> SchemaId {
-    let mut names = nodes.iter().filter_map(get_node_str).collect::<Vec<_>>();
+    let mut names = nodes.iter().filter_map(node_to_string).collect::<Vec<_>>();
     assert!(!names.is_empty() && names.len() <= 2);
     let name = names.pop().unwrap();
     let func_name = format!("{}({})", name, args.iter().map(|a| &a.data_type).join(", "));
-    names.push(&func_name);
-    SchemaId::new_with(&names)
+    names.push(func_name);
+    SchemaId::new_with(&names.iter().map(|v| v.as_str()).collect::<Vec<_>>())
 }
 
 fn parse_args(args: &[Node]) -> Vec<FunctionArg> {

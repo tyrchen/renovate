@@ -3,7 +3,7 @@ use crate::{
     NodeItem,
 };
 use pg_query::{
-    protobuf::{AlterTableStmt, ConstrType, Constraint as PgConstraint},
+    protobuf::{AlterTableStmt, Constraint as PgConstraint},
     NodeEnum, NodeRef,
 };
 
@@ -63,7 +63,7 @@ impl TableConstraint {
 impl TryFrom<&PgConstraint> for ConstraintInfo {
     type Error = anyhow::Error;
     fn try_from(constraint: &PgConstraint) -> Result<Self, Self::Error> {
-        let con_type = ConstrType::from_i32(constraint.contype).unwrap();
+        let con_type = constraint.contype();
         let node = NodeEnum::Constraint(Box::new(constraint.clone()));
         let name = constraint.conname.clone();
         Ok(Self {
@@ -76,6 +76,8 @@ impl TryFrom<&PgConstraint> for ConstraintInfo {
 
 #[cfg(test)]
 mod tests {
+    use pg_query::protobuf::ConstrType;
+
     use super::*;
     use crate::{Differ, MigrationPlanner};
 

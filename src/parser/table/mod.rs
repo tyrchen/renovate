@@ -140,11 +140,9 @@ mod tests {
         assert_eq!(col.id.name, "id");
         assert_eq!(col.type_name, "serial");
 
-        assert_eq!(col.constraints.len(), 2);
+        assert_eq!(col.constraints.len(), 1);
         let constraints: Vec<_> = col.constraints.iter().collect();
         let cons = constraints.get(0).unwrap();
-        assert_eq!(cons.con_type, ConstrType::ConstrNotnull);
-        let cons = constraints.get(1).unwrap();
         assert_eq!(cons.con_type, ConstrType::ConstrPrimary);
         assert!(!col.nullable);
 
@@ -152,9 +150,9 @@ mod tests {
         assert_eq!(col.id.name, "name");
         assert_eq!(col.type_name, "text");
         assert!(col.nullable);
-        assert_eq!(col.constraints.len(), 1);
-        let constraints: Vec<_> = col.constraints.iter().collect();
-        let cons = constraints.get(0).unwrap();
+        assert_eq!(col.constraints.len(), 0);
+
+        let cons = col.default.as_ref().unwrap();
         assert_eq!(cons.con_type, ConstrType::ConstrDefault);
 
         let constraints: Vec<_> = table.constraints.iter().collect();
@@ -184,21 +182,5 @@ mod tests {
         let new: Table = s2.parse().unwrap();
         let diff = old.diff(&new).unwrap();
         assert!(diff.is_none());
-    }
-
-    #[ignore = "not implemented yet"]
-    #[test]
-    fn table_add_column_with_default_function_should_work() {
-        let s1 = "CREATE TABLE foo (name text)";
-        let s2 = "CREATE TABLE foo (name text default random_name())";
-        let old: Table = s1.parse().unwrap();
-        let new: Table = s2.parse().unwrap();
-        let diff = old.diff(&new).unwrap().unwrap();
-        let plan = diff.plan().unwrap();
-        assert_eq!(plan.len(), 1);
-        assert_eq!(
-            plan[0],
-            "ALTER TABLE public.foo ALTER COLUMN name SET DEFAULT random_name()"
-        );
     }
 }

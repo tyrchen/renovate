@@ -6,18 +6,18 @@ where
     NodeDiff<T>: MigrationPlanner,
 {
     type Diff = NodeDiff<T>;
-    fn diff(&self, remote: &Self) -> anyhow::Result<Option<Self::Diff>> {
-        let local_id = self.id();
-        let remote_id = remote.id();
-        if local_id != remote_id {
-            anyhow::bail!("can't diff {} and {}", local_id, remote_id);
+    fn diff(&self, new: &Self) -> anyhow::Result<Option<Self::Diff>> {
+        let old_id = self.id();
+        let new_id = new.id();
+        if old_id != new_id {
+            anyhow::bail!("can't diff {} and {}", old_id, new_id);
         }
 
-        if self != remote {
-            let diff = create_diff(self, remote)?;
+        if self != new {
+            let diff = create_diff(self, new)?;
             Ok(Some(NodeDiff {
                 old: Some(self.clone()),
-                new: Some(remote.clone()),
+                new: Some(new.clone()),
                 diff,
             }))
         } else {

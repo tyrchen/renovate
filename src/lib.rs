@@ -110,7 +110,7 @@ pub trait DeltaItem {
     /// generate sql for create
     fn create(self, node: &Self::SqlNode) -> Result<Vec<String>>;
     /// generate sql for alter
-    fn alter(self, node: &Self::SqlNode, remote: Self) -> Result<Vec<String>>;
+    fn alter(self, node: &Self::SqlNode, new: Self) -> Result<Vec<String>>;
 }
 
 pub trait SqlFormatter {
