@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.8] - 2023-01-07
+
+[4658050](4658050defc8020003f74da8ff90bb878d84bd15)...[31a68c5](31a68c575ee30010b83cbfae362112e98484d34a)
+
+### Features
+
+- Add `renovate schema normalize` ([0c00600](0c006000c6b23e02bc8619f8c1ab60b017ed86c5) - 2023-01-07 by Tyr Chen)
+- Make sequence diff work ([44c7695](44c769594b6525bb6c3770bb3b61dbaad39f02a5) - 2023-01-07 by Tyr Chen)
+- Support table level objects ([2a01a82](2a01a8274dbd23e6d34def39c1aa29aa8bae8d8e) - 2023-01-07 by Tyr Chen)
+- Support table sequence and fix loading order by adding prefix ([85bb819](85bb819befd58cad549b347076cbcc7aec8629f3) - 2023-01-07 by Tyr Chen)
+- Improve normalize CLI to remove all sql files and retrieve them from server ([31a68c5](31a68c575ee30010b83cbfae362112e98484d34a) - 2023-01-07 by Tyr Chen)
+
+### Refactor
+
+- Replace most of the macros with functions ([fb2a7f2](fb2a7f2fcc0c14120d48940ce455a14a88261854) - 2023-01-07 by Tyr Chen)
+- Deprecate SchemaSaver. Use DatabaseSchema directly. ([b8d2564](b8d2564d4423d3b058c8fac3a579485e7814ef7c) - 2023-01-07 by Tyr Chen)
+
 ## [0.2.7] - 2023-01-07
 
 [9a36034](9a360344c11fe77eb0c0a07337bc8656b24c5526)...[4658050](4658050defc8020003f74da8ff90bb878d84bd15)
