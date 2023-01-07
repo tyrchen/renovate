@@ -5,6 +5,7 @@ use crate::{
 use anyhow::Result;
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
+    hash::Hash,
     str::FromStr,
 };
 
@@ -38,6 +39,19 @@ impl DatabaseSchema {
         migrations.extend(schema_diff(&self.sequences, &other.sequences, verbose)?);
         // diff on tables
         migrations.extend(schema_diff(&self.tables, &other.tables, verbose)?);
+
+        // diff on table related stuff
+        migrations.extend(schema_diff(
+            &self.table_constraints,
+            &other.table_constraints,
+            verbose,
+        )?);
+        migrations.extend(schema_diff(
+            &self.table_indexes,
+            &other.table_indexes,
+            verbose,
+        )?);
+
         // diff on views
         migrations.extend(schema_diff(&self.views, &other.views, verbose)?);
         // diff on functions
@@ -72,12 +86,13 @@ fn schema_name_removed(local: &BTreeSet<String>, remote: &BTreeSet<String>) -> R
     Ok(migrations)
 }
 
-fn schema_diff<T>(
-    local: &BTreeMap<String, BTreeMap<String, T>>,
-    remote: &BTreeMap<String, BTreeMap<String, T>>,
+fn schema_diff<K, T>(
+    local: &BTreeMap<K, BTreeMap<String, T>>,
+    remote: &BTreeMap<K, BTreeMap<String, T>>,
     verbose: bool,
 ) -> Result<Vec<String>>
 where
+    K: Hash + Eq + Ord,
     T: NodeItem + Clone + FromStr<Err = anyhow::Error> + PartialEq + Eq + 'static,
     NodeDiff<T>: MigrationPlanner<Migration = String>,
 {

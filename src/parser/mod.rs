@@ -16,7 +16,7 @@ use pg_query::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SchemaId {
     pub schema: String,
     pub name: String,
@@ -36,11 +36,11 @@ pub struct DatabaseSchema {
     pub extensions: BTreeMap<String, BTreeMap<String, Extension>>,
     pub composite_types: BTreeMap<String, BTreeMap<String, CompositeType>>,
     pub enum_types: BTreeMap<String, BTreeMap<String, EnumType>>,
+    pub sequences: BTreeMap<String, BTreeMap<String, Sequence>>,
     pub tables: BTreeMap<String, BTreeMap<String, Table>>,
     pub views: BTreeMap<String, BTreeMap<String, View>>,
     pub mviews: BTreeMap<String, BTreeMap<String, MatView>>,
     pub functions: BTreeMap<String, BTreeMap<String, Function>>,
-    pub sequences: BTreeMap<String, BTreeMap<String, Sequence>>,
 
     // database level objects
     pub triggers: BTreeMap<String, Trigger>,
@@ -49,10 +49,10 @@ pub struct DatabaseSchema {
     // table level objects
     pub table_indexes: BTreeMap<SchemaId, BTreeMap<String, TableIndex>>,
     pub table_constraints: BTreeMap<SchemaId, BTreeMap<String, TableConstraint>>,
+    pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
     pub table_policies: BTreeMap<SchemaId, Vec<TablePolicy>>,
     pub table_rls: BTreeMap<SchemaId, TableRls>,
     pub table_owners: BTreeMap<SchemaId, TableOwner>,
-    pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
 
     // internal data structures
     _table_sequences: BTreeMap<SchemaId, SequenceInfo>,
