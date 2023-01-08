@@ -15,11 +15,28 @@ pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
 pub fn type_name_to_string(n: &TypeName) -> String {
     let typname = n.names.iter().filter_map(node_to_string).join(".");
     let typmod = n.typmods.iter().filter_map(node_to_string).join("");
-    if typmod.is_empty() {
-        typname
-    } else {
-        format!("{}({})", typname, typmod)
+    let array_bounds = array_bounds_to_string(&n.array_bounds);
+
+    match (typmod.as_str(), array_bounds.as_str()) {
+        ("", "") => typname,
+        ("", b) => format!("{}{}", typname, b),
+        (m, "") => format!("{}({})", typname, m),
+        (m, b) => format!("{}({}){}", typname, m, b),
     }
+}
+
+pub fn array_bounds_to_string(bounds: &[Node]) -> String {
+    bounds
+        .iter()
+        .filter_map(node_to_string)
+        .map(|s| {
+            if s == "-1" {
+                "[]".to_owned()
+            } else {
+                format!("[{}]", s)
+            }
+        })
+        .join("")
 }
 
 pub fn node_to_string(node: &Node) -> Option<String> {

@@ -92,8 +92,6 @@ impl DeltaItem for Column {
         let mut migrations = vec![];
         let mut commands = vec![];
 
-        println!("!!! {:#?}", self);
-
         if self.type_name != new.type_name {
             commands.push(format!(
                 "ALTER COLUMN {} TYPE {}",
@@ -184,6 +182,21 @@ mod tests {
         assert_eq!(
             plan[0],
             "ALTER TABLE public.foo ALTER COLUMN name TYPE pg_catalog.varchar(256)"
+        );
+    }
+
+    #[test]
+    fn table_change_column_array_type_should_work() {
+        let s1 = "CREATE TABLE foo (name text[][4])";
+        let s2 = "CREATE TABLE foo (name varchar(256)[][5])";
+        let old: Table = s1.parse().unwrap();
+        let new: Table = s2.parse().unwrap();
+        let diff = old.diff(&new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(
+            plan[0],
+            "ALTER TABLE public.foo ALTER COLUMN name TYPE pg_catalog.varchar(256)[][5]"
         );
     }
 }
