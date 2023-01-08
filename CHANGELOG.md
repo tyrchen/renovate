@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.10] - 2023-01-08
+
+[77043a7](77043a72c3b3d0fe439937525a343ad5eb095bda)...[4b6bba7](4b6bba767aa9339e8a173e05000fe6653c1f0b5a)
+
+### Bug Fixes
+
+- 1. normalize failed due to lack of `create schema`; 2. plan coloring 3. table sequence sql missing ([8dde39d](8dde39dcc58dec0740a175b4383343032f9f3c7e) - 2023-01-07 by Tyr Chen)
+- Fix issue on complex check constraint ([08a8bcf](08a8bcfa97248b31532bd68f7517645a081d14fa) - 2023-01-08 by Tyr Chen)
+
+### Features
+
+- Refactor schema diff code and support rls/owner ([8a66e53](8a66e533283fb724380627f0f907a094814cacdc) - 2023-01-07 by Tyr Chen)
+- Support alter table add/drop constraints ([bbe1da0](bbe1da0347b2d6be4e5d78832ceafd6d47ccc1c8) - 2023-01-08 by Tyr Chen)
+- Support enum migration and fix constraint expr issue ([4b6bba7](4b6bba767aa9339e8a173e05000fe6653c1f0b5a) - 2023-01-08 by Tyr Chen)
+
 ## [0.2.9] - 2023-01-07
 
 [31a68c5](31a68c575ee30010b83cbfae362112e98484d34a)...[77043a7](77043a72c3b3d0fe439937525a343ad5eb095bda)
