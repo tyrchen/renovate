@@ -120,4 +120,20 @@ mod tests {
             "ALTER TABLE ONLY users ADD CONSTRAINT users_pkey PRIMARY KEY (id, name)"
         );
     }
+
+    #[test]
+    fn alter_table_unique_constraint_migration_should_drop_and_create() {
+        let sql1 = "ALTER TABLE ONLY users ADD CONSTRAINT c1 UNIQUE (name)";
+        let sql2 = "ALTER TABLE ONLY users ADD CONSTRAINT c1 UNIQUE (id, name)";
+        let old: TableConstraint = sql1.parse().unwrap();
+        let new: TableConstraint = sql2.parse().unwrap();
+        let diff = Differ::diff(&old, &new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 2);
+        assert_eq!(plan[0], "ALTER TABLE ONLY public.users DROP CONSTRAINT c1");
+        assert_eq!(
+            plan[1],
+            "ALTER TABLE ONLY users ADD CONSTRAINT c1 UNIQUE (id, name)"
+        );
+    }
 }

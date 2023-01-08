@@ -1,8 +1,6 @@
-use super::{
-    utils::{get_type_name, node_to_string},
-    EnumType,
-};
+use super::{utils::node_to_string, EnumType};
 use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
+use itertools::Itertools;
 use pg_query::{protobuf::CreateEnumStmt, NodeEnum, NodeRef};
 
 impl NodeItem for EnumType {
@@ -40,7 +38,12 @@ impl NodeItem for EnumType {
 impl TryFrom<&CreateEnumStmt> for EnumType {
     type Error = anyhow::Error;
     fn try_from(stmt: &CreateEnumStmt) -> Result<Self, Self::Error> {
-        let id = get_type_name(&stmt.type_name).parse()?;
+        let id = stmt
+            .type_name
+            .iter()
+            .filter_map(node_to_string)
+            .join(".")
+            .parse()?;
         let node = NodeEnum::CreateEnumStmt(stmt.clone());
         let items = stmt.vals.iter().filter_map(node_to_string).collect();
         Ok(Self { id, items, node })

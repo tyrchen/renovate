@@ -8,8 +8,8 @@ mod table_sequence;
 
 use super::{Column, ConstraintInfo, SchemaId, Table};
 use crate::{MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
+use indexmap::IndexMap;
 use pg_query::{protobuf::CreateStmt, NodeEnum, NodeRef};
-use std::collections::BTreeMap;
 
 impl NodeItem for Table {
     type Inner = CreateStmt;
@@ -83,9 +83,13 @@ impl MigrationPlanner for NodeDiff<Table> {
     fn alter(&self) -> MigrationResult<Self::Migration> {
         match (&self.old, &self.new) {
             (Some(old), Some(new)) => {
-                let delta = NodeDelta::create(&old.columns, &new.columns);
+                let delta =
+                    NodeDelta::create(old.columns.iter().collect(), new.columns.iter().collect());
                 let mut migrations = delta.plan(old)?;
-                let delta = NodeDelta::create(&old.constraints, &new.constraints);
+                let delta = NodeDelta::create(
+                    old.constraints.iter().collect(),
+                    new.constraints.iter().collect(),
+                );
                 migrations.extend(delta.plan(old)?);
                 Ok(migrations)
             }
@@ -97,9 +101,9 @@ impl MigrationPlanner for NodeDiff<Table> {
 fn parse_nodes(
     id: SchemaId,
     stmt: &CreateStmt,
-) -> anyhow::Result<(BTreeMap<String, Column>, BTreeMap<String, ConstraintInfo>)> {
-    let mut columns = BTreeMap::new();
-    let mut constraints = BTreeMap::new();
+) -> anyhow::Result<(IndexMap<String, Column>, IndexMap<String, ConstraintInfo>)> {
+    let mut columns = IndexMap::new();
+    let mut constraints = IndexMap::new();
 
     for node in stmt.table_elts.iter().filter_map(|n| n.node.as_ref()) {
         match node {

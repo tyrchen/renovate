@@ -92,7 +92,10 @@ impl MigrationPlanner for NodeDiff<Privilege> {
                     // we can't alter these privilege changes, so we need to drop and recreate it
                     return Ok(vec![]);
                 }
-                let delta = NodeDelta::create(&old.privileges, &new.privileges);
+                let delta = NodeDelta::create(
+                    old.privileges.iter().collect(),
+                    new.privileges.iter().collect(),
+                );
                 delta.plan(old)
             }
             _ => Ok(vec![]),

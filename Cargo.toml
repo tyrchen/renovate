@@ -1,6 +1,6 @@
 [package]
 name = "renovate"
-version = "0.2.10"
+version = "0.2.11"
 edition = "2021"
 
 [lib]
@@ -26,6 +26,7 @@ console = "0.15.4"
 derivative = "2.2.0"
 git2 = { version = "0.15.0", default-features = false }
 glob = "0.3.0"
+indexmap = "1.9.2"
 itertools = "0.10.5"
 nom = "7.1.2"
 pg_query = { version = "0.7.0", git = "https://github.com/pganalyze/pg_query.rs" }

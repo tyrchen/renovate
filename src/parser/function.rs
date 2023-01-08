@@ -1,5 +1,5 @@
 use super::{
-    utils::{get_type_name, node_to_string},
+    utils::{node_to_string, type_name_to_string},
     Function, FunctionArg, SchemaId,
 };
 use crate::NodeItem;
@@ -46,7 +46,7 @@ impl TryFrom<&CreateFunctionStmt> for Function {
 
         let id = parse_id(&stmt.funcname, &args);
 
-        let returns = get_type_name(&stmt.return_type.as_ref().unwrap().names);
+        let returns = type_name_to_string(stmt.return_type.as_ref().unwrap());
 
         let node = NodeEnum::CreateFunctionStmt(stmt.clone());
         Ok(Self {
@@ -72,7 +72,7 @@ fn parse_args(args: &[Node]) -> Vec<FunctionArg> {
         .map(|n| match n.node.as_ref() {
             Some(NodeEnum::FunctionParameter(param)) => FunctionArg {
                 name: param.name.clone(),
-                data_type: get_type_name(&param.arg_type.as_ref().unwrap().names),
+                data_type: type_name_to_string(param.arg_type.as_ref().unwrap()),
             },
             _ => panic!("not a function parameter"),
         })

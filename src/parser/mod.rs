@@ -10,6 +10,7 @@ mod utils;
 mod view;
 
 use derivative::Derivative;
+use indexmap::IndexMap;
 use pg_query::{
     protobuf::{ConstrType, GrantTargetType, ObjectType},
     NodeEnum,
@@ -98,11 +99,11 @@ pub struct EnumType {
 
 /// Table defined in the schema
 #[derive(Derivative, Debug, Clone)]
-#[derivative(PartialEq, Eq, PartialOrd, Ord)]
+#[derivative(PartialEq, Eq)]
 pub struct Table {
     pub id: SchemaId,
-    pub columns: BTreeMap<String, Column>,
-    pub constraints: BTreeMap<String, ConstraintInfo>,
+    pub columns: IndexMap<String, Column>,
+    pub constraints: IndexMap<String, ConstraintInfo>,
 
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
@@ -144,13 +145,16 @@ pub struct FunctionArg {
     pub data_type: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Derivative, Debug, Clone)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Column {
     pub id: RelationId,
     pub type_name: String,
     pub nullable: bool,
     pub default: Option<ConstraintInfo>,
     pub constraints: BTreeSet<ConstraintInfo>,
+    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub node: NodeEnum,
 }
 
 #[derive(Derivative, Debug, Clone)]

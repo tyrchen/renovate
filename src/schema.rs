@@ -201,7 +201,7 @@ fn schema_name_added(local: &BTreeSet<String>, remote: &BTreeSet<String>) -> Res
 
     let added = local.difference(remote);
     for key in added {
-        migrations.push(format!("CREATE SCHEMA {}", key));
+        migrations.push(format!("CREATE SCHEMA IF NOT EXISTS {}", key));
     }
 
     Ok(migrations)

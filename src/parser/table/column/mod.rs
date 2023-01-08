@@ -2,13 +2,15 @@ mod constraint_info;
 
 use crate::{
     parser::{
-        utils::{get_type_name, node_to_embed_constraint},
+        utils::{node_to_embed_constraint, type_name_to_string},
         Column, RelationId, SchemaId, Table,
     },
     DeltaItem,
 };
-use anyhow::anyhow;
-use pg_query::protobuf::{ColumnDef, ConstrType};
+use pg_query::{
+    protobuf::{ColumnDef, ConstrType},
+    NodeEnum,
+};
 use std::collections::BTreeSet;
 
 impl TryFrom<(SchemaId, ColumnDef)> for Column {
@@ -16,13 +18,7 @@ impl TryFrom<(SchemaId, ColumnDef)> for Column {
     fn try_from((id, column): (SchemaId, ColumnDef)) -> Result<Self, Self::Error> {
         let name = column.colname.clone();
 
-        let type_nodes = &column
-            .type_name
-            .as_ref()
-            .ok_or_else(|| anyhow!("no data type"))?
-            .names;
-        let type_name = get_type_name(type_nodes);
-        // let type_modifier = get_type_mod(data_type);
+        let type_name = type_name_to_string(column.type_name.as_ref().unwrap());
 
         let mut constraints = BTreeSet::new();
 
@@ -54,6 +50,7 @@ impl TryFrom<(SchemaId, ColumnDef)> for Column {
             nullable,
             constraints,
             default,
+            node: NodeEnum::ColumnDef(Box::new(column)),
         })
     }
 }
@@ -92,9 +89,13 @@ impl DeltaItem for Column {
 
     fn alter(self, item: &Self::SqlNode, new: Self) -> anyhow::Result<Vec<String>> {
         assert_eq!(self.id, new.id);
-        let mut sql = format!("ALTER TABLE {} ", item.id);
+        let mut migrations = vec![];
+        let mut commands = vec![];
+
+        println!("!!! {:#?}", self);
+
         if self.type_name != new.type_name {
-            sql.push_str(&format!(
+            commands.push(format!(
                 "ALTER COLUMN {} TYPE {}",
                 new.id.name, new.type_name
             ));
@@ -110,7 +111,7 @@ impl DeltaItem for Column {
                     "SET NOT NULL"
                 }
             );
-            sql.push_str(&nullable);
+            commands.push(nullable);
         }
 
         if self.default != new.default {
@@ -123,10 +124,14 @@ impl DeltaItem for Column {
                     "DROP DEFAULT".to_string()
                 }
             );
-            sql.push_str(&default);
+            commands.push(default);
         }
 
-        let migrations = vec![sql];
+        if !commands.is_empty() {
+            let sql = format!("ALTER TABLE {} {}", item.id, commands.join(" "));
+            migrations.push(sql);
+        }
+
         Ok(migrations)
     }
 }
@@ -164,6 +169,21 @@ mod tests {
         assert_eq!(
             plan[0],
             "ALTER TABLE public.foo ALTER COLUMN name SET DEFAULT ''"
+        );
+    }
+
+    #[test]
+    fn table_change_column_type_should_work() {
+        let s1 = "CREATE TABLE foo (name varchar(128))";
+        let s2 = "CREATE TABLE foo (name varchar(256))";
+        let old: Table = s1.parse().unwrap();
+        let new: Table = s2.parse().unwrap();
+        let diff = old.diff(&new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(
+            plan[0],
+            "ALTER TABLE public.foo ALTER COLUMN name TYPE pg_catalog.varchar(256)"
         );
     }
 }

@@ -1,11 +1,24 @@
 use crate::parser::ConstraintInfo;
 use itertools::Itertools;
-use pg_query::{protobuf::AExprKind, Node, NodeEnum};
+use pg_query::{
+    protobuf::{AExprKind, TypeName},
+    Node, NodeEnum,
+};
 
 pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
     match &node.node {
         Some(NodeEnum::Constraint(v)) => ConstraintInfo::try_from(v.as_ref()).ok(),
         _ => None,
+    }
+}
+
+pub fn type_name_to_string(n: &TypeName) -> String {
+    let typname = n.names.iter().filter_map(node_to_string).join(".");
+    let typmod = n.typmods.iter().filter_map(node_to_string).join("");
+    if typmod.is_empty() {
+        typname
+    } else {
+        format!("{}({})", typname, typmod)
     }
 }
 
@@ -56,11 +69,7 @@ pub fn node_enum_to_string(node: &NodeEnum) -> Option<String> {
                 _ => None,
             }
         }
-        NodeEnum::TypeName(t) => {
-            let typname = t.names.iter().filter_map(node_to_string).join(".");
-            let typmod = t.typmods.iter().filter_map(node_to_string).join("");
-            Some(format!("{}({})", typname, typmod))
-        }
+        NodeEnum::TypeName(t) => Some(type_name_to_string(t)),
         NodeEnum::ColumnRef(c) => {
             let fields = c.fields.iter().filter_map(node_to_string).join(",");
             Some(fields)

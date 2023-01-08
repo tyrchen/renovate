@@ -5,7 +5,7 @@ impl<T, Item> NodeDelta<T>
 where
     T: Clone + Ord + DeltaItem<SqlNode = Item>,
 {
-    pub fn create(old: &BTreeMap<String, T>, new: &BTreeMap<String, T>) -> NodeDelta<T> {
+    pub fn create(old: BTreeMap<&String, &T>, new: BTreeMap<&String, &T>) -> NodeDelta<T> {
         let mut delta = NodeDelta::default();
 
         let old_keys: BTreeSet<_> = old.keys().collect();
@@ -23,8 +23,8 @@ where
         }
 
         for key in might_changed {
-            let old_priv = &old[*key];
-            let new_priv = &new[*key];
+            let old_priv = old[*key];
+            let new_priv = new[*key];
             if old_priv != new_priv {
                 delta.changed.insert((old_priv.clone(), new_priv.clone()));
             }
