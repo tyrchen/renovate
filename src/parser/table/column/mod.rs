@@ -126,7 +126,7 @@ impl DeltaItem for Column {
         }
 
         if !commands.is_empty() {
-            let sql = format!("ALTER TABLE {} {}", item.id, commands.join(" "));
+            let sql = format!("ALTER TABLE {} {}", item.id, commands.join(", "));
             migrations.push(sql);
         }
 
@@ -198,5 +198,17 @@ mod tests {
             plan[0],
             "ALTER TABLE public.foo ALTER COLUMN name TYPE pg_catalog.varchar(256)[][5]"
         );
+    }
+
+    #[test]
+    fn table_add_column_array_type_should_work() {
+        let s1 = "CREATE TABLE foo (name varchar(256))";
+        let s2 = "CREATE TABLE foo (name varchar(256), tags text [])";
+        let old: Table = s1.parse().unwrap();
+        let new: Table = s2.parse().unwrap();
+        let diff = old.diff(&new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(plan[0], "ALTER TABLE public.foo ADD COLUMN tags text[]");
     }
 }
