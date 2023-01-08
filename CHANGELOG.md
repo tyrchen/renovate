@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.12] - 2023-01-08
+
+[e2afc2c](e2afc2c882a86dc78928aad1a1226c9f9bd2e862)...[c82e14e](c82e14e3595d92762867747052abc2d23d957d5e)
+
+### Features
+
+- Support array type ([c82e14e](c82e14e3595d92762867747052abc2d23d957d5e) - 2023-01-08 by Tyr Chen)
+
 ## [0.2.11] - 2023-01-08
 
 [4b6bba7](4b6bba767aa9339e8a173e05000fe6653c1f0b5a)...[e2afc2c](e2afc2c882a86dc78928aad1a1226c9f9bd2e862)
