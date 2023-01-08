@@ -20,7 +20,7 @@ impl CommandExecutor for SchemaApplyCommand {
 
         {
             let repo = GitRepo::open(".")?;
-            if repo.is_dirty() {
+            if repo.is_dirty() && !confirm("Your repo is dirty. Do you want to continue?") {
                 bail!("Your repo is dirty. Please commit the changes before applying.");
             }
         }
@@ -28,7 +28,9 @@ impl CommandExecutor for SchemaApplyCommand {
             remote_repo.apply(plan).await?;
             {
                 let repo = GitRepo::open(".")?;
-                repo.commit("automatically retrieved most recent schema from remote server")?;
+                if repo.is_dirty() {
+                    repo.commit("automatically retrieved most recent schema from remote server")?;
+                }
             }
             println!(
                 "Successfully applied migration to {}.\nYour repo is updated with the latest schema. See `git diff HEAD~1` for details.",

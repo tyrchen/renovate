@@ -22,7 +22,7 @@ impl ConstraintInfo {
             {
                 let expr = constraint.raw_expr.as_deref().unwrap();
                 if let Some(s) = node_to_string(expr) {
-                    return Ok(format!("CONSTRAINT {}", s));
+                    return Ok(format!("CONSTRAINT {} CHECK ({})", self.name, s));
                 }
                 "".to_owned()
             }

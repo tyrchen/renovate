@@ -1,5 +1,8 @@
-use super::{utils::get_type_name, EnumType};
-use crate::NodeItem;
+use super::{
+    utils::{get_type_name, node_to_string},
+    EnumType,
+};
+use crate::{MigrationPlanner, MigrationResult, NodeDiff, NodeItem};
 use pg_query::{protobuf::CreateEnumStmt, NodeEnum, NodeRef};
 
 impl NodeItem for EnumType {
@@ -39,7 +42,62 @@ impl TryFrom<&CreateEnumStmt> for EnumType {
     fn try_from(stmt: &CreateEnumStmt) -> Result<Self, Self::Error> {
         let id = get_type_name(&stmt.type_name).parse()?;
         let node = NodeEnum::CreateEnumStmt(stmt.clone());
-        Ok(Self { id, node })
+        let items = stmt.vals.iter().filter_map(node_to_string).collect();
+        Ok(Self { id, items, node })
+    }
+}
+
+impl MigrationPlanner for NodeDiff<EnumType> {
+    type Migration = String;
+
+    fn drop(&self) -> MigrationResult<Self::Migration> {
+        if let Some(old) = &self.old {
+            let sqls = vec![old.revert()?.deparse()?];
+            Ok(sqls)
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    fn create(&self) -> MigrationResult<Self::Migration> {
+        if let Some(new) = &self.new {
+            let sqls = vec![new.node.deparse()?];
+            Ok(sqls)
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    fn alter(&self) -> MigrationResult<Self::Migration> {
+        match (&self.old, &self.new) {
+            (Some(old), Some(new)) => {
+                let added = new.items.difference(&old.items).collect::<Vec<_>>();
+                let removed = old.items.difference(&new.items).collect::<Vec<_>>();
+                if removed.is_empty() {
+                    let migrations = added
+                        .iter()
+                        .map(|s| format!("ALTER TYPE {} ADD VALUE '{}'", old.id, s))
+                        .collect();
+                    return Ok(migrations);
+                }
+
+                if removed.len() == added.len() && removed.len() == 1 {
+                    let sql = format!(
+                        "ALTER TYPE {} RENAME VALUE '{}' TO '{}'",
+                        old.id,
+                        removed.get(0).unwrap(),
+                        added.get(0).unwrap()
+                    );
+                    return Ok(vec![sql]);
+                }
+
+                if atty::is(atty::Stream::Stdout) {
+                    println!("WARNING: recreate enum type {} because of incompatible changes. Be CAUTIOUS this migration might fail if you referenced the type in other places.", old.id);
+                }
+                Ok(vec![])
+            }
+            _ => Ok(vec![]),
+        }
     }
 }
 
@@ -58,16 +116,13 @@ mod tests {
     #[test]
     fn composite_type_should_generate_drop_create_plan() {
         let sql1 = "CREATE TYPE enum_type AS ENUM ('a', 'b', 'c')";
-        let sql2 = "CREATE TYPE enum_type AS ENUM ('a', 'b', 'c', 'd')";
+        let sql2 = "CREATE TYPE enum_type AS ENUM ('a', 'b', 'c', 'd', 'e')";
         let old: EnumType = sql1.parse().unwrap();
         let new: EnumType = sql2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
-        assert_eq!(plan[0], "DROP TYPE public.enum_type");
-        assert_eq!(
-            plan[1],
-            "CREATE TYPE enum_type AS ENUM ('a', 'b', 'c', 'd')"
-        );
+        assert_eq!(plan[0], "ALTER TYPE public.enum_type ADD VALUE 'd'");
+        assert_eq!(plan[1], "ALTER TYPE public.enum_type ADD VALUE 'e'");
     }
 }

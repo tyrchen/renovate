@@ -169,7 +169,7 @@ mod tests {
     fn table_should_generate_valid_plan() {
         let s1 =
             "CREATE TABLE foo (id serial not null primary key, name text default random_name())";
-        let s2 = "CREATE TABLE foo (id serial not null primary key, name text default random_name(), email text, CHECK (check_name(name)))";
+        let s2 = "CREATE TABLE foo (id serial not null primary key, name text default random_name(), email text, constraint c1 CHECK (check_name(name)))";
         let old: Table = s1.parse().unwrap();
         let new: Table = s2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
@@ -178,7 +178,7 @@ mod tests {
         assert_eq!(plan[0], "ALTER TABLE public.foo ADD COLUMN email text");
         assert_eq!(
             plan[1],
-            "ALTER TABLE public.foo ADD CONSTRAINT check_name(name)"
+            "ALTER TABLE public.foo ADD CONSTRAINT c1 CHECK (check_name(name))"
         );
     }
 

@@ -91,6 +91,7 @@ pub struct CompositeType {
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct EnumType {
     pub id: SchemaId,
+    pub items: BTreeSet<String>,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
 }

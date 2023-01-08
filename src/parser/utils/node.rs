@@ -1,6 +1,6 @@
 use crate::parser::ConstraintInfo;
 use itertools::Itertools;
-use pg_query::{Node, NodeEnum};
+use pg_query::{protobuf::AExprKind, Node, NodeEnum};
 
 pub fn node_to_embed_constraint(node: &Node) -> Option<ConstraintInfo> {
     match &node.node {
@@ -34,9 +34,15 @@ pub fn node_enum_to_string(node: &NodeEnum) -> Option<String> {
             let left = e.lexpr.as_deref().and_then(node_to_string);
             let right = e.rexpr.as_deref().and_then(node_to_string);
             let op = e.name.iter().filter_map(node_to_string).join(".");
+            let op_kind = e.kind();
             match (left, right) {
-                (Some(l), Some(r)) => Some(format!("{} {} {}", l, op, r)),
-                _ => None,
+                (Some(l), Some(r)) => match e.kind() {
+                    AExprKind::AexprOp => Some(format!("{} {} {}", l, op, r)),
+                    AExprKind::AexprOpAll => Some(format!("{} {} ALL ({})", l, op, r)),
+                    AExprKind::AexprOpAny => Some(format!("{} {} ANY ({})", l, op, r)),
+                    _ => panic!("Unsupported AExprKind: {:?}", op_kind),
+                },
+                (l, r) => panic!("Expect left and right to exists. Got {:?} and {:?}", l, r),
             }
         }
         NodeEnum::TypeCast(c) => {
@@ -61,7 +67,7 @@ pub fn node_enum_to_string(node: &NodeEnum) -> Option<String> {
         }
         NodeEnum::AArrayExpr(a) => {
             let elements = a.elements.iter().filter_map(node_to_string).join(",");
-            Some(format!("[{}]", elements))
+            Some(format!("ARRAY [{}]", elements))
         }
         _ => None,
     }

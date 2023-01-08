@@ -107,7 +107,6 @@ def_display!(
 
 def_simple_planner!(
     CompositeType,
-    EnumType,
     Function,
     MatView,
     Sequence,
