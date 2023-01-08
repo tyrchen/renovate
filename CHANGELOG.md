@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.11] - 2023-01-08
+
+[4b6bba7](4b6bba767aa9339e8a173e05000fe6653c1f0b5a)...[e2afc2c](e2afc2c882a86dc78928aad1a1226c9f9bd2e862)
+
+### Features
+
+- Make typemod work and fix type related issues if using varchar() ([e2afc2c](e2afc2c882a86dc78928aad1a1226c9f9bd2e862) - 2023-01-08 by Tyr Chen)
+
 ## [0.2.10] - 2023-01-08
 
 [77043a7](77043a72c3b3d0fe439937525a343ad5eb095bda)...[4b6bba7](4b6bba767aa9339e8a173e05000fe6653c1f0b5a)
