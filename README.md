@@ -4,7 +4,7 @@ Renovate is a CLI tool to help you to work on Postgres SQL migration easily.
 
 Example:
 
-```bash
+```console,ignore
 ➜ renovate schema init postgres://localhost:5432/test
 ➜ cat public/tables.sql
 CREATE TABLE public.todos (title text, completed boolean);⏎

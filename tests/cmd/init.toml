@@ -1,0 +1,9 @@
+bin.name = "renovate"
+fs.cwd = "/tmp"
+fs.sandbox = true
+args = ["schema", "init", "postgres://localhost:5432/test1234", "--drop-on-exit"]
+status.code = 0
+stdout = """
+Database schema for postgres://localhost:5432/test1234 has successfully dumped into ./test1234.
+"""
+stderr = ""

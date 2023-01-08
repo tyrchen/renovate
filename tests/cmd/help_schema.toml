@@ -1,0 +1,23 @@
+bin.name = "renovate"
+args = ["schema", "help"]
+status.code = 0
+stdout = """
+renovate-schema[..]
+Schema migration
+
+USAGE:
+    renovate schema [OPTIONS] <SUBCOMMAND>
+
+OPTIONS:
+        --drop-on-exit    drop database on exit (for testing purpose only)
+    -h, --help            Print help information
+
+SUBCOMMANDS:
+    apply        apply the migration plan to the remote database server
+    fetch        fetch the most recent schema from the remote database server
+    help         Print this message or the help of the given subcommand(s)
+    init         init a database migration repo
+    normalize    normalize local schema via a temp local database
+    plan         diff the local change and remote state, then make a migration plan
+"""
+stderr = ""

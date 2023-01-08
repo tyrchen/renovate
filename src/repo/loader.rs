@@ -50,6 +50,7 @@ impl SchemaLoader for RemoteRepo {
     }
 
     async fn load_sql(&self) -> anyhow::Result<String> {
+        self.create_database_if_not_exists().await?;
         let output = async_process::Command::new("pg_dump")
             .arg("-s")
             .arg(&self.url)

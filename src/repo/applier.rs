@@ -36,10 +36,38 @@ impl RemoteRepo {
         Ok(schema)
     }
 
+    /// create database if not exists
+    pub async fn create_database_if_not_exists(&self) -> Result<()> {
+        let ret = PgConnection::connect(&self.url).await;
+        match ret {
+            Ok(_) => Ok(()),
+            Err(_) => {
+                let server_url = self.server_url()?;
+                let mut conn = PgConnection::connect(&server_url).await?;
+
+                conn.execute(format!(r#"CREATE DATABASE "{}""#, self.db_name()?).as_str())
+                    .await?;
+                Ok(())
+            }
+        }
+    }
+
+    /// drop database
+    pub async fn drop_database(&self) -> Result<()> {
+        drop_database(&self.server_url()?, &self.db_name()?).await
+    }
+
     fn server_url(&self) -> Result<String> {
         let mut url = Url::parse(&self.url)?;
         url.set_path("");
         Ok(url.to_string())
+    }
+
+    fn db_name(&self) -> Result<String> {
+        let url = Url::parse(&self.url)?;
+        let path = url.path();
+        let db_name = path.trim_start_matches('/');
+        Ok(db_name.to_string())
     }
 }
 
@@ -67,12 +95,6 @@ impl TmpDb {
         // now connect to test database for migration
         let mut conn = PgConnection::connect(&url).await?;
         let mut tx = conn.begin().await?;
-        // for stmt in sql.split(';') {
-        //     if stmt.trim().is_empty() || stmt.starts_with("--") {
-        //         continue;
-        //     }
-        //     tx.execute(stmt).await?;
-        // }
         tx.execute(sql).await?;
         tx.commit().await?;
 
@@ -95,18 +117,23 @@ impl Drop for TmpDb {
         thread::spawn(move || {
             let rt = Runtime::new().unwrap();
             rt.block_on(async move {
-                    let mut conn = PgConnection::connect(&server_url).await.unwrap();
-                    // terminate existing connections
-                    sqlx::query(&format!(r#"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = '{}'"#, dbname))
+                drop_database(&server_url, &dbname).await.unwrap();
+            });
+        })
+        .join()
+        .expect("failed to drop database");
+    }
+}
+
+async fn drop_database(server_url: &str, dbname: &str) -> Result<()> {
+    let mut conn = PgConnection::connect(server_url).await?;
+    // terminate existing connections
+    sqlx::query(&format!(r#"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = '{}'"#, dbname))
                     .execute( &mut conn)
                     .await
                     .expect("Terminate all other connections");
-                    conn.execute(format!(r#"DROP DATABASE "{}""#, dbname).as_str())
-                        .await
-                        .expect("Error while querying the drop database");
-                });
-            })
-            .join()
-            .expect("failed to drop database");
-    }
+    conn.execute(format!(r#"DROP DATABASE "{}""#, dbname).as_str())
+        .await?;
+
+    Ok(())
 }

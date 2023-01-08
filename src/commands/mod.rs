@@ -20,9 +20,9 @@ pub struct Args {
     #[clap(subcommand)]
     pub action: Action,
 
-    /// enable debug mode
+    /// drop database on exit (for testing purpose only)
     #[clap(long, global = true, value_parser, default_value = "false")]
-    pub debug: bool,
+    pub drop_on_exit: bool,
 }
 
 subcmd!(
