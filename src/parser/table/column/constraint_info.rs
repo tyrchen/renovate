@@ -1,4 +1,7 @@
-use crate::parser::{utils::node_to_string, ConstraintInfo};
+use crate::{
+    parser::{utils::node_to_string, ConstraintInfo, Table},
+    DeltaItem,
+};
 use anyhow::Result;
 use pg_query::{protobuf::ConstrType, NodeEnum};
 
@@ -14,9 +17,36 @@ impl ConstraintInfo {
                 }
                 "".to_owned()
             }
+            NodeEnum::Constraint(ref constraint)
+                if constraint.contype() == ConstrType::ConstrCheck =>
+            {
+                let expr = constraint.raw_expr.as_deref().unwrap();
+                if let Some(s) = node_to_string(expr) {
+                    return Ok(format!("CONSTRAINT {}", s));
+                }
+                "".to_owned()
+            }
             _ => "".to_owned(),
         };
         Ok(s)
+    }
+}
+
+impl DeltaItem for ConstraintInfo {
+    type SqlNode = Table;
+    fn drop(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
+        let sql = format!("ALTER TABLE {} DROP CONSTRAINT {}", item.id, self.name);
+
+        Ok(vec![sql])
+    }
+
+    fn create(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
+        let sql = format!("ALTER TABLE {} ADD {}", item.id, self.generate_sql()?);
+        Ok(vec![sql])
+    }
+
+    fn alter(self, _item: &Self::SqlNode, _new: Self) -> anyhow::Result<Vec<String>> {
+        Ok(vec![])
     }
 }
 

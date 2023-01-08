@@ -30,6 +30,35 @@ pub fn node_enum_to_string(node: &NodeEnum) -> Option<String> {
             let args = f.args.iter().filter_map(node_to_string).join(", ");
             Some(format!("{}({})", fname, args))
         }
+        NodeEnum::AExpr(e) => {
+            let left = e.lexpr.as_deref().and_then(node_to_string);
+            let right = e.rexpr.as_deref().and_then(node_to_string);
+            let op = e.name.iter().filter_map(node_to_string).join(".");
+            match (left, right) {
+                (Some(l), Some(r)) => Some(format!("{} {} {}", l, op, r)),
+                _ => None,
+            }
+        }
+        NodeEnum::TypeCast(c) => {
+            let arg = c.arg.as_deref().and_then(node_to_string);
+            let typname = c
+                .type_name
+                .as_ref()
+                .map(|t| t.names.iter().filter_map(node_to_string).join("."));
+            match (arg, typname) {
+                (Some(a), Some(t)) => Some(format!("{}::{}", a, t)),
+                _ => None,
+            }
+        }
+        NodeEnum::TypeName(t) => {
+            let typname = t.names.iter().filter_map(node_to_string).join(".");
+            let typmod = t.typmods.iter().filter_map(node_to_string).join("");
+            Some(format!("{}({})", typname, typmod))
+        }
+        NodeEnum::ColumnRef(c) => {
+            let fields = c.fields.iter().filter_map(node_to_string).join(",");
+            Some(fields)
+        }
         _ => None,
     }
 }

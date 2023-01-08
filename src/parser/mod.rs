@@ -101,7 +101,7 @@ pub struct EnumType {
 pub struct Table {
     pub id: SchemaId,
     pub columns: BTreeMap<String, Column>,
-    pub constraints: BTreeSet<ConstraintInfo>,
+    pub constraints: BTreeMap<String, ConstraintInfo>,
 
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,

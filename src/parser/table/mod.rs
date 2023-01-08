@@ -9,7 +9,7 @@ mod table_sequence;
 use super::{Column, ConstraintInfo, SchemaId, Table};
 use crate::{MigrationPlanner, MigrationResult, NodeDelta, NodeDiff, NodeItem};
 use pg_query::{protobuf::CreateStmt, NodeEnum, NodeRef};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 impl NodeItem for Table {
     type Inner = CreateStmt;
@@ -84,7 +84,10 @@ impl MigrationPlanner for NodeDiff<Table> {
         match (&self.old, &self.new) {
             (Some(old), Some(new)) => {
                 let delta = NodeDelta::create(&old.columns, &new.columns);
-                delta.plan(old)
+                let mut migrations = delta.plan(old)?;
+                let delta = NodeDelta::create(&old.constraints, &new.constraints);
+                migrations.extend(delta.plan(old)?);
+                Ok(migrations)
             }
             _ => Ok(vec![]),
         }
@@ -94,9 +97,9 @@ impl MigrationPlanner for NodeDiff<Table> {
 fn parse_nodes(
     id: SchemaId,
     stmt: &CreateStmt,
-) -> anyhow::Result<(BTreeMap<String, Column>, BTreeSet<ConstraintInfo>)> {
+) -> anyhow::Result<(BTreeMap<String, Column>, BTreeMap<String, ConstraintInfo>)> {
     let mut columns = BTreeMap::new();
-    let mut constraints = BTreeSet::new();
+    let mut constraints = BTreeMap::new();
 
     for node in stmt.table_elts.iter().filter_map(|n| n.node.as_ref()) {
         match node {
@@ -106,7 +109,7 @@ fn parse_nodes(
             }
             NodeEnum::Constraint(constraint) => {
                 let constraint = ConstraintInfo::try_from(constraint.as_ref())?;
-                constraints.insert(constraint);
+                constraints.insert(constraint.name.clone(), constraint);
             }
             _ => {}
         }
@@ -158,21 +161,25 @@ mod tests {
 
         let constraints: Vec<_> = table.constraints.iter().collect();
         assert_eq!(constraints.len(), 1);
-        let cons = constraints.get(0).unwrap();
+        let (_, cons) = constraints.get(0).unwrap();
         assert_eq!(cons.con_type, ConstrType::ConstrCheck);
     }
 
     #[test]
     fn table_should_generate_valid_plan() {
         let s1 =
-        "CREATE TABLE foo (id serial not null primary key, name text default random_name(), CHECK (check_name(name)))";
+            "CREATE TABLE foo (id serial not null primary key, name text default random_name())";
         let s2 = "CREATE TABLE foo (id serial not null primary key, name text default random_name(), email text, CHECK (check_name(name)))";
         let old: Table = s1.parse().unwrap();
         let new: Table = s2.parse().unwrap();
         let diff = old.diff(&new).unwrap().unwrap();
         let plan = diff.plan().unwrap();
-        assert_eq!(plan.len(), 1);
+        assert_eq!(plan.len(), 2);
         assert_eq!(plan[0], "ALTER TABLE public.foo ADD COLUMN email text");
+        assert_eq!(
+            plan[1],
+            "ALTER TABLE public.foo ADD CONSTRAINT check_name(name)"
+        );
     }
 
     #[test]
