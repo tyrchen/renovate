@@ -5,7 +5,6 @@ mod mview;
 mod privilege;
 mod sequence;
 mod table;
-mod trigger;
 mod utils;
 mod view;
 
@@ -44,13 +43,13 @@ pub struct DatabaseSchema {
     pub functions: BTreeMap<String, BTreeMap<String, Function>>,
 
     // database level objects
-    pub triggers: BTreeMap<String, Trigger>,
     pub privileges: BTreeMap<String, BTreeSet<Privilege>>,
 
     // table level objects
     pub table_indexes: BTreeMap<SchemaId, BTreeMap<String, TableIndex>>,
     pub table_constraints: BTreeMap<SchemaId, BTreeMap<String, TableConstraint>>,
     pub table_sequences: BTreeMap<SchemaId, BTreeMap<String, TableSequence>>,
+    pub table_triggers: BTreeMap<SchemaId, BTreeMap<String, Trigger>>,
     pub table_policies: BTreeMap<SchemaId, BTreeMap<String, TablePolicy>>,
     pub table_rls: BTreeMap<SchemaId, TableRls>,
     pub table_owners: BTreeMap<SchemaId, TableOwner>,
@@ -139,8 +138,10 @@ pub struct Function {
 }
 
 /// Function defined in the schema
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Derivative, Debug, Clone, PartialOrd, Ord)]
+#[derivative(PartialEq, Eq)]
 pub struct FunctionArg {
+    #[derivative(PartialEq = "ignore")]
     pub name: String,
     pub data_type: String,
 }

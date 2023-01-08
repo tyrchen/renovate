@@ -1,5 +1,7 @@
-use super::{RelationId, Trigger};
-use crate::NodeItem;
+use crate::{
+    parser::{RelationId, Trigger},
+    NodeItem,
+};
 use pg_query::{protobuf::CreateTrigStmt, NodeEnum, NodeRef};
 
 impl NodeItem for Trigger {

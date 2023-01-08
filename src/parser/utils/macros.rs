@@ -109,7 +109,6 @@ def_display!(
 
 def_simple_planner!(
     CompositeType,
-    Function,
     MatView,
     Sequence,
     TableConstraint,

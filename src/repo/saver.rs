@@ -67,8 +67,7 @@ impl DatabaseSchema {
         write_schema_files(&self.mviews, "mviews", "06", vec![], config).await?;
         write_schema_files(&self.functions, "functions", "07", vec![], config).await?;
 
-        // write_single_file(&self.triggers, "triggers", "08", config).await?;
-        write_privilege_file(&self.privileges, "privileges", "09", config).await?;
+        write_privilege_file(&self.privileges, "privileges", "10", config).await?;
 
         Ok(())
     }
@@ -94,12 +93,11 @@ impl DatabaseSchema {
         )
         .await?;
 
-        write_schema_file(&self.views, "views", "08", vec![], config).await?;
-        write_schema_file(&self.mviews, "mviews", "09", vec![], config).await?;
-        write_schema_file(&self.functions, "functions", "10", vec![], config).await?;
+        write_schema_file(&self.views, "views", "05", vec![], config).await?;
+        write_schema_file(&self.mviews, "mviews", "06", vec![], config).await?;
+        write_schema_file(&self.functions, "functions", "07", vec![], config).await?;
 
-        // write_single_file(&self.triggers, "triggers", "11", config).await?;
-        write_privilege_file(&self.privileges, "privileges", "12", config).await?;
+        write_privilege_file(&self.privileges, "privileges", "10", config).await?;
 
         Ok(())
     }
@@ -110,7 +108,9 @@ impl DatabaseSchema {
         format: Option<RenovateFormatConfig>,
     ) -> anyhow::Result<()> {
         if let Some(format) = format {
-            let mut content = sqlformat::format(content, &Default::default(), format.into());
+            let content = sqlformat::format(content, &Default::default(), format.into());
+            // TODO(hack): sqlformat adds a space before the dollar sign in $$, which is not valid SQL
+            let mut content = content.replace("$ $", "$$");
             content.push('\n');
             fs::write(filename, content).await?;
         } else {
@@ -126,6 +126,7 @@ impl DatabaseSchema {
             convert(&self.table_constraints),
             convert(&self.table_indexes),
             convert(&self.table_policies),
+            convert(&self.table_triggers),
             convert1(&self.table_rls),
             convert1(&self.table_owners),
         ]
@@ -156,7 +157,7 @@ impl fmt::Display for DatabaseSchema {
         result.push_str(&join_items(&self.table_rls));
         result.push_str(&join_items(&self.table_owners));
 
-        // result.push_str(&join_items(&self.triggers));
+        join_nested_items(&self.table_triggers, &mut result);
         result.push_str(&join_privileges(&self.privileges));
 
         write!(f, "{}", result)

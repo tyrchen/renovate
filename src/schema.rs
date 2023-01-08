@@ -76,7 +76,10 @@ impl DatabaseSchema {
             &other.table_policies,
             verbose,
         )?);
+
+        // diff on rls
         migrations.extend(schema_diff(&self.table_rls, &other.table_rls, verbose)?);
+        // diff on table owners
         migrations.extend(schema_diff(
             &self.table_owners,
             &other.table_owners,
@@ -91,7 +94,12 @@ impl DatabaseSchema {
         migrations.extend(schema_diff(&self.functions, &other.functions, verbose)?);
 
         // diff on triggers
-        migrations.extend(schema_diff(&self.triggers, &other.triggers, verbose)?);
+        migrations.extend(schema_diff(
+            &self.table_triggers,
+            &other.table_triggers,
+            verbose,
+        )?);
+
         // diff on privileges
         migrations.extend(schema_diff(&self.privileges, &other.privileges, verbose)?);
 
@@ -341,7 +349,7 @@ mod tests {
         );
         let local = loader.load().await?;
         let migrations = local.plan(&remote, false).unwrap();
-        assert_eq!(migrations.len(), 5);
+        assert_eq!(migrations.len(), 4);
         assert_eq!(
             migrations[0],
             "ALTER TABLE public.test_table ADD COLUMN created_at timestamptz"
@@ -351,10 +359,9 @@ mod tests {
             migrations[2],
             "CREATE VIEW public.test_view AS SELECT * FROM public.test_table WHERE created_at > now()"
         );
-        assert_eq!(migrations[3], "DROP FUNCTION public.test_function(text)");
         assert_eq!(
-            migrations[4],
-            "CREATE FUNCTION public.test_function(a text) RETURNS text AS $$ SELECT a, 'test1' $$ LANGUAGE sql"
+            migrations[3],
+            "CREATE OR REPLACE FUNCTION public.test_function(a text) RETURNS text AS $$ SELECT a, 'test1' $$ LANGUAGE sql"
         );
 
         Ok(())

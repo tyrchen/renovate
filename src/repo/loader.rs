@@ -100,7 +100,7 @@ impl SchemaLoader for SqlLoader {
                 }
                 NodeRef::CreateTrigStmt(stmt) => {
                     let item: Trigger = stmt.try_into()?;
-                    data.triggers.insert(item.id.name.clone(), item);
+                    map_insert_relation!(data.table_triggers, item);
                 }
                 NodeRef::AlterTableStmt(stmt) => {
                     let item: AlterTable = stmt.try_into()?;

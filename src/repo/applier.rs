@@ -67,12 +67,13 @@ impl TmpDb {
         // now connect to test database for migration
         let mut conn = PgConnection::connect(&url).await?;
         let mut tx = conn.begin().await?;
-        for stmt in sql.split(';') {
-            if stmt.trim().is_empty() || stmt.starts_with("--") {
-                continue;
-            }
-            tx.execute(stmt).await?;
-        }
+        // for stmt in sql.split(';') {
+        //     if stmt.trim().is_empty() || stmt.starts_with("--") {
+        //         continue;
+        //     }
+        //     tx.execute(stmt).await?;
+        // }
+        tx.execute(sql).await?;
         tx.commit().await?;
 
         Ok(tdb)
