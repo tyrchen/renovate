@@ -1,0 +1,4 @@
+bin.name = "renovate"
+args = ["schema", "normalize", "--drop-on-exit"]
+stdout = ""
+stderr = ""

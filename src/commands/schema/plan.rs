@@ -15,8 +15,10 @@ impl CommandExecutor for SchemaPlanCommand {
 
 pub(super) async fn generate_plan() -> Result<Vec<String>> {
     let config = load_config().await?;
-    let local_schema = LocalRepo::new(&config.output.path).load().await?;
-    let remote_schema = RemoteRepo::new(&config.url).load().await?;
+    let remote_repo = RemoteRepo::new(&config.url);
+    let sql = LocalRepo::new(&config.output.path).load_sql().await?;
+    let local_schema = remote_repo.normalize(&sql).await?;
+    let remote_schema = remote_repo.load().await?;
     let plan = local_schema.plan(&remote_schema, true)?;
 
     if plan.is_empty() {

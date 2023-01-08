@@ -7,9 +7,9 @@ pub struct SchemaNormalizeCommand {}
 
 #[async_trait]
 impl CommandExecutor for SchemaNormalizeCommand {
-    async fn execute(&self, _args: &Args) -> Result<(), Error> {
+    async fn execute(&self, args: &Args) -> Result<(), Error> {
         let config = load_config().await?;
-        {
+        if !args.drop_on_exit {
             let repo = GitRepo::open(".")?;
             if repo.is_dirty() {
                 repo.commit("commit schema changes before nomalization")?;
@@ -24,7 +24,7 @@ impl CommandExecutor for SchemaNormalizeCommand {
         let schema = repo.normalize(&sql).await?;
         schema.save(&config.output).await?;
 
-        {
+        if !args.drop_on_exit {
             let repo = GitRepo::open(".")?;
             if repo.is_dirty() {
                 repo.commit("commit schema changes after nomalization")?;

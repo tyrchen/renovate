@@ -1,0 +1,8 @@
+url: postgres://localhost:5432/test1234
+output:
+  layout: normal
+  path: .
+  format:
+    indent: 4
+    uppercase: true
+    lines_between_queries: 2

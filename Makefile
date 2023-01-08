@@ -5,6 +5,9 @@ build:
 test:
 	@cargo nextest run --all-features
 
+snapshot:
+	@TRYCMD=overwrite cargo test --test cli_tests
+
 release:
 	@cargo release tag --execute
 	@git cliff -o CHANGELOG.md

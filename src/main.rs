@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
     if args.drop_on_exit {
         let config = RenovateConfig::load("renovate.yml").await?;
         let repo = RemoteRepo::new(&config.url);
-        repo.drop_database().await?;
+        repo.drop_database().await.ok();
     }
     Ok(())
 }
