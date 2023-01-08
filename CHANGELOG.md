@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.2.13] - 2023-01-08
+
+[c82e14e](c82e14e3595d92762867747052abc2d23d957d5e)...[3bbe834](3bbe8341b490740e24a121771d306c23cf2389c9)
 
 ### Bug Fixes
 
 - Multiple alter column cmds shall use "," to separate ([2bc7e6e](2bc7e6e307928155a8b50c17e3be67281283c977) - 2023-01-08 by Tyr Chen)
+
+### Features
+
+- Support policy and rls ([3bbe834](3bbe8341b490740e24a121771d306c23cf2389c9) - 2023-01-08 by Tyr Chen)
+
+### Miscellaneous Tasks
+
+- [skip ci] update docs ([4533608](453360841408dd0e0d04d19dc29aed92cefb62c4) - 2023-01-08 by Tyr Chen)
 
 ## [0.2.12] - 2023-01-08
 
