@@ -26,3 +26,28 @@ subcmd!(
         Plan = "diff the local change and remote state, then make a migration plan"
     ]
 );
+
+#[cfg(feature = "cli-test")]
+fn git_commit(_msg: impl AsRef<str>) -> Result<()> {
+    Ok(())
+}
+
+#[cfg(not(feature = "cli-test"))]
+fn git_commit(msg: impl AsRef<str>) -> Result<()> {
+    let repo = crate::GitRepo::open(".")?;
+    if repo.is_dirty() {
+        repo.commit(msg)?;
+    }
+
+    Ok(())
+}
+#[cfg(feature = "cli-test")]
+fn git_dirty() -> Result<bool> {
+    Ok(false)
+}
+
+#[cfg(not(feature = "cli-test"))]
+fn git_dirty() -> Result<bool> {
+    let repo = crate::GitRepo::open(".")?;
+    Ok(repo.is_dirty())
+}

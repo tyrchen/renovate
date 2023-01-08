@@ -6,9 +6,9 @@ use crate::{
         TableSequence, Trigger, View,
     },
     utils::ignore_file,
-    DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader, SqlLoader,
+    DatabaseRepo, DatabaseSchema, LocalRepo, SchemaLoader, SqlLoader,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use glob::glob;
 use pg_query::NodeRef;
@@ -42,7 +42,7 @@ impl SchemaLoader for LocalRepo {
 }
 
 #[async_trait]
-impl SchemaLoader for RemoteRepo {
+impl SchemaLoader for DatabaseRepo {
     /// run pg_dump us async process and get the output sql
     async fn load(&self) -> anyhow::Result<crate::DatabaseSchema> {
         let sql = self.load_sql().await?;
@@ -50,19 +50,9 @@ impl SchemaLoader for RemoteRepo {
     }
 
     async fn load_sql(&self) -> anyhow::Result<String> {
-        self.create_database_if_not_exists().await?;
-        let output = async_process::Command::new("pg_dump")
-            .arg("-s")
-            .arg(&self.url)
-            .output()
-            .await?;
-
-        if !output.status.success() {
-            bail!("{}", String::from_utf8(output.stderr)?);
-        }
-
-        let sql = String::from_utf8(output.stdout)?;
-        Ok(sql)
+        #[cfg(feature = "cli-test")]
+        self.init_local_database().await?;
+        self.load_sql_string(false).await
     }
 }
 

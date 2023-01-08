@@ -1,4 +1,5 @@
 url: postgres://localhost:5432/_test1234
+remote_url: postgres://localhost:5432/_test1234
 output:
   layout: normal
   path: .

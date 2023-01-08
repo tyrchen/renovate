@@ -3,7 +3,7 @@ pub mod git;
 mod loader;
 mod saver;
 
-use crate::{LocalRepo, RemoteRepo, SqlLoader};
+use crate::{DatabaseRepo, LocalRepo, RenovateConfig, SqlLoader};
 use std::path::PathBuf;
 
 impl LocalRepo {
@@ -12,9 +12,19 @@ impl LocalRepo {
     }
 }
 
-impl RemoteRepo {
-    pub fn new(url: impl Into<String>) -> Self {
-        Self { url: url.into() }
+impl DatabaseRepo {
+    pub fn new(config: &RenovateConfig) -> Self {
+        Self {
+            url: config.url.clone(),
+            remote_url: config.remote_url.clone(),
+        }
+    }
+
+    pub fn new_with(url: String) -> Self {
+        Self {
+            url: url.clone(),
+            remote_url: url,
+        }
     }
 }
 

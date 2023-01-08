@@ -1,5 +1,5 @@
-use super::{Args, CommandExecutor};
-use crate::{GitRepo, RemoteRepo, RenovateConfig};
+use super::{git_commit, Args, CommandExecutor};
+use crate::{DatabaseRepo, RenovateConfig};
 use clap_utils::prelude::*;
 use std::{env::set_current_dir, fs, path::PathBuf};
 use url::Url;
@@ -21,20 +21,15 @@ impl CommandExecutor for SchemaInitCommand {
         }
 
         set_current_dir(&path)?;
-        let config = RenovateConfig::new(self.url.to_string());
+        let config = RenovateConfig::new(self.url.clone());
         config.save("renovate.yml").await?;
 
-        let remote_repo = RemoteRepo::new(&config.url);
-        remote_repo.fetch().await?;
+        let db_repo = DatabaseRepo::new(&config);
+        db_repo.init_local_database().await?;
 
-        #[cfg(feature = "cli-test")]
-        let is_test = true;
-        #[cfg(not(feature = "cli-test"))]
-        let is_test = false;
-        if !is_test {
-            let repo = GitRepo::init(".")?;
-            repo.commit(format!("init schema migration repo for {}", self.url))?;
-        }
+        db_repo.fetch().await?;
+
+        git_commit(format!("init schema migration repo for {}", self.url))?;
 
         println!(
             "Database schema for {} has successfully dumped into {}.",

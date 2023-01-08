@@ -9,9 +9,9 @@ async fn main() -> Result<()> {
 
     #[cfg(feature = "cli-test")]
     {
-        use renovate::{RemoteRepo, RenovateConfig};
+        use renovate::{DatabaseRepo, RenovateConfig};
         let config = RenovateConfig::load("renovate.yml").await?;
-        let repo = RemoteRepo::new(&config.url);
+        let repo = DatabaseRepo::new(&config);
         repo.drop_database().await.ok();
     }
     Ok(())

@@ -132,8 +132,9 @@ pub struct LocalRepo {
 
 /// Remote repository
 #[derive(Debug, Clone)]
-pub struct RemoteRepo {
-    pub url: String,
+pub struct DatabaseRepo {
+    url: String,
+    remote_url: String,
 }
 
 /// intermediate representation for local and remote repo

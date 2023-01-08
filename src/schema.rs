@@ -1,7 +1,7 @@
 use crate::{DatabaseSchema, Differ, MigrationPlanner, NodeDiff, NodeItem};
 use anyhow::Result;
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet},
     hash::Hash,
     str::FromStr,
 };
@@ -166,8 +166,8 @@ where
 {
     fn diff_altered(&self, remote: &Self, verbose: bool) -> Result<Vec<String>> {
         let mut migrations: Vec<String> = Vec::new();
-        let keys: HashSet<_> = self.keys().collect();
-        let other_keys: HashSet<_> = remote.keys().collect();
+        let keys: BTreeSet<_> = self.keys().collect();
+        let other_keys: BTreeSet<_> = remote.keys().collect();
         let added = keys.difference(&other_keys);
         for key in added {
             let v = self.get(*key).unwrap().clone();
@@ -295,8 +295,8 @@ where
     T: SchemaPlan,
 {
     let mut migrations: Vec<String> = Vec::new();
-    let keys: HashSet<_> = local.keys().collect();
-    let other_keys: HashSet<_> = remote.keys().collect();
+    let keys: BTreeSet<_> = local.keys().collect();
+    let other_keys: BTreeSet<_> = remote.keys().collect();
 
     // process intersection
     let intersection = keys.intersection(&other_keys);

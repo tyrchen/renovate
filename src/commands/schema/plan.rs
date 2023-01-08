@@ -1,5 +1,5 @@
 use super::{Args, CommandExecutor};
-use crate::{utils::load_config, LocalRepo, RemoteRepo, SchemaLoader};
+use crate::{utils::load_config, DatabaseRepo, LocalRepo, SchemaLoader};
 use clap_utils::{highlight_text, prelude::*};
 
 #[derive(Parser, Debug, Clone)]
@@ -15,10 +15,10 @@ impl CommandExecutor for SchemaPlanCommand {
 
 pub(super) async fn generate_plan() -> Result<Vec<String>> {
     let config = load_config().await?;
-    let remote_repo = RemoteRepo::new(&config.url);
+    let db_repo = DatabaseRepo::new(&config);
     let sql = LocalRepo::new(&config.output.path).load_sql().await?;
-    let local_schema = remote_repo.normalize(&sql).await?;
-    let remote_schema = remote_repo.load().await?;
+    let local_schema = db_repo.normalize(&sql).await?;
+    let remote_schema = db_repo.load().await?;
     let plan = local_schema.plan(&remote_schema, true)?;
 
     if plan.is_empty() {
@@ -33,8 +33,11 @@ pub(super) async fn generate_plan() -> Result<Vec<String>> {
             &Default::default(),
             config.output.format.unwrap_or_default().into(),
         );
-        println!("{};", highlight_text(&formatted, "sql", None)?);
+        if atty::is(atty::Stream::Stdout) {
+            println!("{};", highlight_text(&formatted, "sql", None)?);
+        } else {
+            println!("{};", formatted);
+        }
     }
-    println!("\n");
     Ok(plan)
 }

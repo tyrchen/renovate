@@ -1,12 +1,15 @@
-use super::{generate_plan, Args, CommandExecutor};
-use crate::{utils::load_config, GitRepo, RemoteRepo};
+use super::{generate_plan, git_commit, git_dirty, Args, CommandExecutor};
+use crate::{utils::load_config, DatabaseRepo};
 use clap_utils::{
     dialoguer::{theme::ColorfulTheme, Confirm},
     prelude::*,
 };
 
 #[derive(Parser, Debug, Clone)]
-pub struct SchemaApplyCommand {}
+pub struct SchemaApplyCommand {
+    #[clap(long, value_parser, default_value = "false")]
+    remote: bool,
+}
 
 #[async_trait]
 impl CommandExecutor for SchemaApplyCommand {
@@ -16,22 +19,15 @@ impl CommandExecutor for SchemaApplyCommand {
             return Ok(());
         }
         let config = load_config().await?;
-        let remote_repo = RemoteRepo::new(&config.url);
+        let db_repo = DatabaseRepo::new(&config);
 
-        {
-            let repo = GitRepo::open(".")?;
-            if repo.is_dirty() && !confirm("Your repo is dirty. Do you want to continue?") {
-                bail!("Your repo is dirty. Please commit the changes before applying.");
-            }
+        if git_dirty()? && !confirm("Your repo is dirty. Do you want to continue?") {
+            bail!("Your repo is dirty. Please commit the changes before applying.");
         }
+
         if confirm("Do you want to perform this update?") {
-            remote_repo.apply(plan).await?;
-            {
-                let repo = GitRepo::open(".")?;
-                if repo.is_dirty() {
-                    repo.commit("automatically retrieved most recent schema from remote server")?;
-                }
-            }
+            db_repo.apply(plan, self.remote).await?;
+            git_commit("automatically retrieved most recent schema from remote server")?;
             println!(
                 "Successfully applied migration to {}.\nYour repo is updated with the latest schema. See `git diff HEAD~1` for details.",
                 config.url
