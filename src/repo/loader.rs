@@ -2,8 +2,8 @@ use crate::{
     map_insert_relation, map_insert_schema,
     parser::{
         AlterTable, AlterTableAction, CompositeType, EnumType, Function, MatView, Privilege,
-        Sequence, Table, TableConstraint, TableIndex, TableOwner, TableRls, TableSequence, Trigger,
-        View,
+        Sequence, Table, TableConstraint, TableIndex, TableOwner, TablePolicy, TableRls,
+        TableSequence, Trigger, View,
     },
     utils::ignore_file,
     DatabaseSchema, LocalRepo, RemoteRepo, SchemaLoader, SqlLoader,
@@ -156,8 +156,9 @@ impl SchemaLoader for SqlLoader {
                 NodeRef::CreateFdwStmt(_fdw) => {
                     info!("TODO: fwd");
                 }
-                NodeRef::CreatePolicyStmt(_policy) => {
-                    todo!()
+                NodeRef::CreatePolicyStmt(policy) => {
+                    let item: TablePolicy = policy.try_into()?;
+                    map_insert_relation!(data.table_policies, item);
                 }
                 _ => {
                     info!("unhandled node: {:?}", node.deparse());

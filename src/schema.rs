@@ -71,6 +71,11 @@ impl DatabaseSchema {
             &other.table_indexes,
             verbose,
         )?);
+        migrations.extend(schema_diff(
+            &self.table_policies,
+            &other.table_policies,
+            verbose,
+        )?);
         migrations.extend(schema_diff(&self.table_rls, &other.table_rls, verbose)?);
         migrations.extend(schema_diff(
             &self.table_owners,

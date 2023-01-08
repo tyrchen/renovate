@@ -1,7 +1,8 @@
 use crate::{
     parser::{
         AlterTable, CompositeType, EnumType, Function, MatView, Privilege, Sequence, Table,
-        TableConstraint, TableIndex, TableOwner, TableRls, TableSequence, Trigger, View,
+        TableConstraint, TableIndex, TableOwner, TablePolicy, TableRls, TableSequence, Trigger,
+        View,
     },
     MigrationPlanner, MigrationResult, NodeDiff, NodeItem,
 };
@@ -99,6 +100,7 @@ def_display!(
     TableConstraint,
     TableIndex,
     TableOwner,
+    TablePolicy,
     TableRls,
     TableSequence,
     Trigger,
@@ -113,6 +115,7 @@ def_simple_planner!(
     TableConstraint,
     TableIndex,
     TableOwner,
+    TablePolicy,
     TableRls,
     TableSequence,
     Trigger,
@@ -128,6 +131,7 @@ def_from_str!(Table, CreateStmt);
 def_from_str!(TableConstraint);
 def_from_str!(TableIndex, IndexStmt);
 def_from_str!(TableOwner);
+def_from_str!(TablePolicy, CreatePolicyStmt);
 def_from_str!(TableRls);
 def_from_str!(TableSequence);
 def_from_str!(Trigger, CreateTrigStmt);

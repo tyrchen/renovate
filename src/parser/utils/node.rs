@@ -1,7 +1,7 @@
 use crate::parser::ConstraintInfo;
 use itertools::Itertools;
 use pg_query::{
-    protobuf::{AExprKind, TypeName},
+    protobuf::{AExprKind, RoleSpecType, SqlValueFunctionOp, TypeName},
     Node, NodeEnum,
 };
 
@@ -91,10 +91,22 @@ pub fn node_enum_to_string(node: &NodeEnum) -> Option<String> {
             let fields = c.fields.iter().filter_map(node_to_string).join(",");
             Some(fields)
         }
+        NodeEnum::SqlvalueFunction(f) => match f.op() {
+            SqlValueFunctionOp::SvfopCurrentUser => Some("CURRENT_USER".to_owned()),
+            SqlValueFunctionOp::SvfopCurrentRole => Some("CURRENT_ROLE".to_owned()),
+            op => unimplemented!("Unsupported SqlValueFunctionOp: {:?}", op),
+        },
         NodeEnum::AArrayExpr(a) => {
             let elements = a.elements.iter().filter_map(node_to_string).join(",");
             Some(format!("ARRAY [{}]", elements))
         }
+        NodeEnum::RoleSpec(r) => match r.roletype() {
+            RoleSpecType::RolespecCstring => Some(r.rolename.clone()),
+            RoleSpecType::RolespecCurrentUser => Some("CURRENT_USER".to_owned()),
+            RoleSpecType::RolespecSessionUser => Some("SESSION_USER".to_owned()),
+            RoleSpecType::RolespecPublic => None,
+            RoleSpecType::Undefined => None,
+        },
         _ => None,
     }
 }

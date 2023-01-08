@@ -238,7 +238,12 @@ pub struct Extension {
 #[derive(Derivative, Debug, Clone)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TablePolicy {
-    pub id: SchemaId,
+    pub id: RelationId,
+    pub cmd_name: String,
+    pub permissive: bool,
+    pub roles: BTreeSet<String>,
+    pub qual: Option<String>,
+    pub with_check: Option<String>,
     #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub node: NodeEnum,
 }

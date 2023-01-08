@@ -3,6 +3,7 @@ mod column;
 mod table_constraint;
 mod table_index;
 mod table_owner;
+mod table_policy;
 mod table_rls;
 mod table_sequence;
 

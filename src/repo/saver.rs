@@ -103,7 +103,8 @@ impl DatabaseSchema {
         format: Option<RenovateFormatConfig>,
     ) -> anyhow::Result<()> {
         if let Some(format) = format {
-            let content = sqlformat::format(content, &Default::default(), format.into());
+            let mut content = sqlformat::format(content, &Default::default(), format.into());
+            content.push('\n');
             fs::write(filename, content).await?;
         } else {
             fs::write(filename, content).await?;
@@ -117,6 +118,7 @@ impl DatabaseSchema {
             convert(&self.table_sequences),
             convert(&self.table_constraints),
             convert(&self.table_indexes),
+            convert(&self.table_policies),
             convert1(&self.table_rls),
             convert1(&self.table_owners),
         ]
@@ -139,9 +141,13 @@ impl fmt::Display for DatabaseSchema {
         join_nested_items(&self.table_sequences, &mut result);
         join_nested_items(&self.table_constraints, &mut result);
         join_nested_items(&self.table_indexes, &mut result);
+        join_nested_items(&self.table_policies, &mut result);
         join_nested_items(&self.views, &mut result);
         join_nested_items(&self.mviews, &mut result);
         join_nested_items(&self.functions, &mut result);
+
+        result.push_str(&join_items(&self.table_rls));
+        result.push_str(&join_items(&self.table_owners));
 
         result.push_str(&join_items(&self.triggers));
         result.push_str(&join_items(&self.privileges));
@@ -252,8 +258,9 @@ where
     Ok(())
 }
 
-fn join_items<T>(source: &BTreeMap<String, T>) -> String
+fn join_items<K, T>(source: &BTreeMap<K, T>) -> String
 where
+    K: Hash + Eq + Ord,
     T: ToString,
 {
     let mut dest = String::new();
