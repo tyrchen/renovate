@@ -45,7 +45,7 @@ pub struct DatabaseSchema {
 
     // database level objects
     pub triggers: BTreeMap<String, Trigger>,
-    pub privileges: BTreeMap<String, Privilege>,
+    pub privileges: BTreeMap<String, BTreeSet<Privilege>>,
 
     // table level objects
     pub table_indexes: BTreeMap<SchemaId, BTreeMap<String, TableIndex>>,
@@ -200,7 +200,7 @@ pub struct TableConstraint {
 }
 
 #[derive(Derivative, Debug, Clone)]
-#[derivative(PartialEq, Eq, PartialOrd, Ord)]
+#[derivative(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Privilege {
     pub id: String,
     pub target_type: GrantTargetType,
@@ -208,11 +208,16 @@ pub struct Privilege {
     pub privileges: BTreeMap<String, SinglePriv>,
     pub grantee: String,
     pub grant: bool,
-    #[derivative(Debug = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    #[derivative(
+        Debug = "ignore",
+        PartialOrd = "ignore",
+        Ord = "ignore",
+        Hash = "ignore"
+    )]
     pub node: NodeEnum,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SinglePriv {
     pub name: String,
     pub cols: BTreeSet<String>,

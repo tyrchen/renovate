@@ -85,8 +85,15 @@ impl DatabaseSchema {
 
         // diff on views
         migrations.extend(schema_diff(&self.views, &other.views, verbose)?);
+        // diff on materialized views
+        migrations.extend(schema_diff(&self.mviews, &other.mviews, verbose)?);
         // diff on functions
         migrations.extend(schema_diff(&self.functions, &other.functions, verbose)?);
+
+        // diff on triggers
+        migrations.extend(schema_diff(&self.triggers, &other.triggers, verbose)?);
+        // diff on privileges
+        migrations.extend(schema_diff(&self.privileges, &other.privileges, verbose)?);
 
         // finally, drop the schema names
         migrations.extend(schema_name_removed(&self.schemas, &other.schemas)?);
@@ -195,6 +202,53 @@ where
     fn diff_removed(&self, verbose: bool) -> Result<Vec<String>> {
         let mut migrations: Vec<String> = Vec::new();
         for item in self.values() {
+            migrations.extend(item.diff_removed(verbose)?);
+        }
+        Ok(migrations)
+    }
+}
+
+impl<T> SchemaPlan for BTreeSet<T>
+where
+    T: NodeItem + Clone + FromStr<Err = anyhow::Error> + PartialEq + Eq + Ord + Hash + 'static,
+    NodeDiff<T>: MigrationPlanner<Migration = String>,
+{
+    fn diff_altered(&self, remote: &Self, verbose: bool) -> Result<Vec<String>> {
+        let mut migrations: Vec<String> = Vec::new();
+        let added = self.difference(remote);
+        for v in added {
+            let (id, t) = (v.id(), v.type_name());
+            let diff = NodeDiff::with_new(v.clone());
+            if verbose && atty::is(atty::Stream::Stdout) {
+                println!("{} {} is added:\n\n{}", t, id, diff.diff);
+            }
+            migrations.extend(diff.plan()?);
+        }
+        let removed = remote.difference(self);
+        for v in removed {
+            let (id, t) = (v.id(), v.type_name());
+            let diff = NodeDiff::with_old(v.clone());
+            if verbose && atty::is(atty::Stream::Stdout) {
+                println!("{} {} is removed:\n\n{}", t, id, diff.diff);
+            }
+            migrations.extend(diff.plan()?);
+        }
+
+        Ok(migrations)
+    }
+
+    fn diff_added(&self, verbose: bool) -> Result<Vec<String>> {
+        let mut migrations: Vec<String> = Vec::new();
+        for item in self {
+            migrations.extend(item.diff_added(verbose)?);
+        }
+
+        Ok(migrations)
+    }
+
+    fn diff_removed(&self, verbose: bool) -> Result<Vec<String>> {
+        let mut migrations: Vec<String> = Vec::new();
+        for item in self {
             migrations.extend(item.diff_removed(verbose)?);
         }
         Ok(migrations)

@@ -132,7 +132,10 @@ impl SchemaLoader for SqlLoader {
                 }
                 NodeRef::GrantStmt(grant) => {
                     let item: Privilege = grant.try_into()?;
-                    data.privileges.insert(item.id.clone(), item);
+                    data.privileges
+                        .entry(item.id.clone())
+                        .or_default()
+                        .insert(item);
                 }
                 NodeRef::CommentStmt(_comment) => {
                     info!("ignore comment");

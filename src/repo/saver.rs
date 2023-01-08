@@ -5,7 +5,14 @@ use crate::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use std::{collections::BTreeMap, fmt, hash::Hash, path::Path, str::FromStr};
+use itertools::Itertools;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt,
+    hash::Hash,
+    path::Path,
+    str::FromStr,
+};
 use tokio::fs;
 
 #[async_trait]
@@ -60,8 +67,8 @@ impl DatabaseSchema {
         write_schema_files(&self.mviews, "mviews", "06", vec![], config).await?;
         write_schema_files(&self.functions, "functions", "07", vec![], config).await?;
 
-        write_single_file(&self.triggers, "triggers", "08", config).await?;
-        write_single_file(&self.privileges, "privileges", "09", config).await?;
+        // write_single_file(&self.triggers, "triggers", "08", config).await?;
+        write_privilege_file(&self.privileges, "privileges", "09", config).await?;
 
         Ok(())
     }
@@ -91,8 +98,8 @@ impl DatabaseSchema {
         write_schema_file(&self.mviews, "mviews", "09", vec![], config).await?;
         write_schema_file(&self.functions, "functions", "10", vec![], config).await?;
 
-        write_single_file(&self.triggers, "triggers", "11", config).await?;
-        write_single_file(&self.privileges, "privileges", "12", config).await?;
+        // write_single_file(&self.triggers, "triggers", "11", config).await?;
+        write_privilege_file(&self.privileges, "privileges", "12", config).await?;
 
         Ok(())
     }
@@ -149,8 +156,8 @@ impl fmt::Display for DatabaseSchema {
         result.push_str(&join_items(&self.table_rls));
         result.push_str(&join_items(&self.table_owners));
 
-        result.push_str(&join_items(&self.triggers));
-        result.push_str(&join_items(&self.privileges));
+        // result.push_str(&join_items(&self.triggers));
+        result.push_str(&join_privileges(&self.privileges));
 
         write!(f, "{}", result)
     }
@@ -241,16 +248,16 @@ where
     Ok(())
 }
 
-async fn write_single_file<T>(
-    source: &BTreeMap<String, T>,
+async fn write_privilege_file<T>(
+    source: &BTreeMap<String, BTreeSet<T>>,
     name: &str,
     prefix: &str,
     config: &RenovateOutputConfig,
 ) -> Result<()>
 where
-    T: NodeItem,
+    T: ToString,
 {
-    let content = join_items(source);
+    let content = join_privileges(source);
     if !content.is_empty() {
         let path = config.path.join(format!("{}_{}.sql", prefix, name));
         DatabaseSchema::write(&path, &content, config.format).await?;
@@ -266,6 +273,19 @@ where
     let mut dest = String::new();
     for v in source.values() {
         dest.push_str(v.to_string().as_str());
+        dest.push_str(";\n\n");
+    }
+    dest
+}
+
+fn join_privileges<K, T>(source: &BTreeMap<K, BTreeSet<T>>) -> String
+where
+    K: Hash + Eq + Ord,
+    T: ToString,
+{
+    let mut dest = String::new();
+    for v in source.values() {
+        dest.push_str(v.iter().map(|v| v.to_string()).join(";\n").as_str());
         dest.push_str(";\n\n");
     }
     dest
