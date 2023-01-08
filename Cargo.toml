@@ -1,6 +1,6 @@
 [package]
 name = "renovate"
-version = "0.2.15"
+version = "0.2.16"
 edition = "2021"
 
 [lib]
@@ -14,7 +14,7 @@ path = "src/main.rs"
 [features]
 default = ["cli"]
 cli = ["clap-utils"]
-
+cli-test = []
 
 [dependencies]
 anyhow = "1.0.68"

@@ -6,7 +6,7 @@ test:
 	@cargo nextest run --all-features
 
 snapshot:
-	@TRYCMD=overwrite cargo test --test cli_tests
+	@TRYCMD=overwrite cargo test --test cli_tests --all-features
 
 release:
 	@cargo release tag --execute

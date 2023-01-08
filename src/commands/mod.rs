@@ -20,6 +20,7 @@ pub struct Args {
     #[clap(subcommand)]
     pub action: Action,
 
+    #[cfg(feature = "cli-test")]
     /// drop database on exit (for testing purpose only)
     #[clap(long, global = true, value_parser, default_value = "false")]
     pub drop_on_exit: bool,

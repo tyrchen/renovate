@@ -27,7 +27,11 @@ impl CommandExecutor for SchemaInitCommand {
         let remote_repo = RemoteRepo::new(&config.url);
         remote_repo.fetch().await?;
 
-        {
+        #[cfg(feature = "cli-test")]
+        let is_test = true;
+        #[cfg(not(feature = "cli-test"))]
+        let is_test = false;
+        if !is_test {
             let repo = GitRepo::init(".")?;
             repo.commit(format!("init schema migration repo for {}", self.url))?;
         }

@@ -10,6 +10,7 @@ impl CommandExecutor for SchemaFetchCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
         let config = load_config().await?;
         let repo = RemoteRepo::new(&config.url);
+
         if confirm("This will overwrite the local schema files. Continue?") {
             repo.fetch().await?;
         }
