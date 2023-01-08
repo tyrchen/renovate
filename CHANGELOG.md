@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.16] - 2023-01-08
+
+[c4fb19f](c4fb19f0d1aa0cdeaea199af5accbd3263b4f22f)...[5d33205](5d33205fa0add1e57e9dcd4e5bc8bf002f4270c6)
+
+### Bug Fixes
+
+- Fix cmd test cases ([5d33205](5d33205fa0add1e57e9dcd4e5bc8bf002f4270c6) - 2023-01-08 by Tyr Chen)
+
+### Features
+
+- Support command test ([8973182](8973182f7fde65cf9a2381a61ed10b12888af2d9) - 2023-01-08 by Tyr Chen)
+- Add cmd tests for normalize and plan ([da6b1e3](da6b1e32bf3a83a8c96338ad4a9a29ac2d801412) - 2023-01-08 by Tyr Chen)
+
 ## [0.2.15] - 2023-01-08
 
 [cb0b493](cb0b493048cfda4d51a101ecc76c625637f7e340)...[c4fb19f](c4fb19f0d1aa0cdeaea199af5accbd3263b4f22f)
