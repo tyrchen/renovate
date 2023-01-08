@@ -59,6 +59,10 @@ pub fn node_enum_to_string(node: &NodeEnum) -> Option<String> {
             let fields = c.fields.iter().filter_map(node_to_string).join(",");
             Some(fields)
         }
+        NodeEnum::AArrayExpr(a) => {
+            let elements = a.elements.iter().filter_map(node_to_string).join(",");
+            Some(format!("[{}]", elements))
+        }
         _ => None,
     }
 }
