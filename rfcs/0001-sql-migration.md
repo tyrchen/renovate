@@ -23,16 +23,16 @@ User could use the tool like this:
 
 ```bash
 # dump all the schemas into a folder
-$ renovate pg init --url postgres://user@localhost:5432/hello
+$ renovate schema init --url postgres://user@localhost:5432/hello
 Database schema has successfully dumped into ./hello.
 
 # if schema already exists, before modifying it, it is always a good practice to fetch the latest schema. Fetch will fail if current folder is not under git or it is not up to date with remote repository.
-$ renovate pg fetch
+$ renovate schema fetch
 
 # do whatever schema changes you want
 
 # then run plan to see what changes will be applied. When redirect to a file, it will just print all the SQL statements for the migration.
-$ renovate pg plan
+$ renovate schema plan
 Table auth.users changed:
 
 create table auth.users(
