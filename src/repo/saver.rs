@@ -56,12 +56,12 @@ impl DatabaseSchema {
         )
         .await?;
 
-        write_schema_files(&self.views, "views", "08", vec![], config).await?;
-        write_schema_files(&self.mviews, "mviews", "09", vec![], config).await?;
-        write_schema_files(&self.functions, "functions", "10", vec![], config).await?;
+        write_schema_files(&self.views, "views", "05", vec![], config).await?;
+        write_schema_files(&self.mviews, "mviews", "06", vec![], config).await?;
+        write_schema_files(&self.functions, "functions", "07", vec![], config).await?;
 
-        write_single_file(&self.triggers, "triggers", "11", config).await?;
-        write_single_file(&self.privileges, "privileges", "12", config).await?;
+        write_single_file(&self.triggers, "triggers", "08", config).await?;
+        write_single_file(&self.privileges, "privileges", "09", config).await?;
 
         Ok(())
     }
