@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.15] - 2023-01-08
+
+[cb0b493](cb0b493048cfda4d51a101ecc76c625637f7e340)...[c4fb19f](c4fb19f0d1aa0cdeaea199af5accbd3263b4f22f)
+
+### Features
+
+- Make function & trigger work ([c4fb19f](c4fb19f0d1aa0cdeaea199af5accbd3263b4f22f) - 2023-01-08 by Tyr Chen)
+
 ## [0.2.14] - 2023-01-08
 
 [3bbe834](3bbe8341b490740e24a121771d306c23cf2389c9)...[cb0b493](cb0b493048cfda4d51a101ecc76c625637f7e340)
