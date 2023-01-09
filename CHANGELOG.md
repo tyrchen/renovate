@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.21] - 2023-01-09
+
+[352b977](352b977f51dc9636a2c40218d53a7f4ee5b0e8c1)...[951798f](951798fd772011c970aeefbbf62cf14c422915a9)
+
+### Bug Fixes
+
+- Silly typo for the output of `renovate schema apply` ([951798f](951798fd772011c970aeefbbf62cf14c422915a9) - 2023-01-09 by Tyr Chen)
+
+### Miscellaneous Tasks
+
+- Update Readme ([2646b9a](2646b9a9b10f3c63cb7512795997c20b159f8c16) - 2023-01-09 by Tyr Chen)
+
 ## [0.2.20] - 2023-01-09
 
 [84b01f3](84b01f363459bffa67e795be6349b5b136c5d46a)...[352b977](352b977f51dc9636a2c40218d53a7f4ee5b0e8c1)
