@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.19] - 2023-01-09
+
+[81ea378](81ea37862b5a4224a46a94e599d1d25621ba1f8b)...[84b01f3](84b01f363459bffa67e795be6349b5b136c5d46a)
+
+### Bug Fixes
+
+- Fix gh action issue ([ef16a60](ef16a60857276fc412b0004822606601f8404925) - 2023-01-09 by Tyr Chen)
+- Github action ([38e03a8](38e03a8e1e19cf5d59dbc272873d1a49dc72f702) - 2023-01-09 by Tyr Chen)
+- Fix pg version to 14 since ubuntu has pg_dump 14 ([c0d367b](c0d367b9e576c408a54fbe4d7634208e5e7203d0) - 2023-01-09 by Tyr Chen)
+- Commit the cwd for init.toml ([c6adc84](c6adc8402a452d42f1fa2c4b71556be5f3eced31) - 2023-01-09 by Tyr Chen)
+
+### Miscellaneous Tasks
+
+- Remove unnecessary examples ([986c535](986c535d1eb8260e322134276e0d0023570efdf1) - 2023-01-09 by Tyr Chen)
+- Update document and prepare for open source ([84b01f3](84b01f363459bffa67e795be6349b5b136c5d46a) - 2023-01-09 by Tyr Chen)
+
 ## [0.2.18] - 2023-01-09
 
 [5d33205](5d33205fa0add1e57e9dcd4e5bc8bf002f4270c6)...[81ea378](81ea37862b5a4224a46a94e599d1d25621ba1f8b)
