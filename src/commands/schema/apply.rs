@@ -33,9 +33,9 @@ impl CommandExecutor for SchemaApplyCommand {
             db_repo.apply(plan, self.remote).await?;
             git_commit("automatically commit the changes applied to remote server")?;
             let url = if self.remote {
-                &config.url
-            } else {
                 &config.remote_url
+            } else {
+                &config.url
             };
             println!(
                 "Successfully applied migration to {}.\nYour repo is updated with the latest schema. See `git diff HEAD~1` for details.",
