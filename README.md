@@ -1,8 +1,14 @@
 # Renovate: A new way to handle Postgres schema migration
 
-Database schema designs will evolve over time as the products they support evolves. It is important to be able to migrate the schema in a safe and reliable manner to incorporate the product changes.
+Database schema designs will evolve as the products they support evolves over time. It is important to be able to migrate the schema safely and reliably to incorporate the product changes.
 
-Traditionally,  migration systems like ActiveRecord or sqlx will allow you to write migration files to describe what you want to execute to move the database from the current state to a new state. The system will track what migration files were applied by using a migration table like this:
+Traditionally,  migration systems like ActiveRecord or sqlx will allow you to write migration files to describe what you want to execute to move the database from the current state to a new state. For example, if you want to add a `created_at` column to the todos table, you need to write a migration script first:
+
+```sql
+ALTER TABLE todos ADD COLUMN created_at timestamptz DEFAULT NOW();
+```
+
+The system will track what migration files were applied by using a migration table like this:
 
 ```sql
 CREATE TABLE public._sqlx_migrations (
@@ -15,11 +21,13 @@ CREATE TABLE public._sqlx_migrations (
 );
 ```
 
-This approach is reliable but it defers the burden of writing migration scripts to the developers. Sometimes the migration scripts are not easy to write, especially when the schema is complex. It is also hard to review the migration scripts since the reviewers need to understand what the current state is and what the new state it wants to achieve.
+When you apply the above migration script successfully, a new record will be added to the migration table to indicate it has been applied. The next time you run the migration, the system will check the migration table and skip the migration script if it has been applied before.
 
-Newer migration systems like [atlas](https://github.com/ariga/atlas) can *understand* database schemas and generate migrations for you. To achieve this, normally the system needs to know the local state that users want to transit to and the remote state that is currently running in the database. Once the system gathered both states, it could *diff* them to understand what changes are needed. This approach is widely used by the tools to manage cloud resources, for example, [terraform](https://www.terraform.io/). It is more convenient for developers, and tools like terraform proved their value.
+This approach is reliable but it defers the burden of writing migration scripts to the developers. Sometimes the migration scripts are not easy to write, especially when the schema is complex and the change is not straightforward. It is also hard to review the migration scripts since the reviewers need to understand what the current state is and what the new state it wants to achieve.
 
-Renovate is a tool that falls into the second category. Unlike atlas, it doesn't use a new language (say HCL) to describe the local state. Instead, it uses the existing SQL DDL to describe the state. You could use `renovate schema init` to start a new project from an existing database. Renovate will retrieve the schema (if any) from the database server and properly organize the SQLs in different folders in a newly created git repo. And this will be your local state. You can do whatever modifications you'd like to do to it. Once you're satisfied with the schema, you can use `renovate schema plan` to get the migration plan. Renovate will use `pg_dump` to retrieve the remote state from the database server, and then diff the AST between the local state and the remote state to find out the right migration plan. If you're satisfied with the migration plan, you can apply it to the database server via `renovate schema apply`.
+Newer migration systems like [atlas](https://github.com/ariga/atlas) can *understand* database schemas and generate migrations for you based on their understanding. To achieve this, normally the system needs to know the local state that users want to transit to and the remote state that is currently running in the database. Once the system gathered both states, it could *diff* them to decide what changes are needed. This approach is widely used by the tools to manage cloud resources, for example, [terraform](https://www.terraform.io/). It is more convenient for developers, and tools like terraform proved their reliability and safety.
+
+Renovate is a tool that falls into the second category. Unlike atlas, it doesn't use a new language (say HCL) to describe the local state. Instead, it uses the existing SQL DDL to describe the schema state. You could use `renovate schema init` to start a new project from an existing database. Renovate will retrieve the schema (if any) from the database server and properly organize the SQLs in different folders in a newly created git repo. And this will be your local state. You can do whatever modifications you'd like to do to it. Once you're satisfied with the schema, you can use `renovate schema plan` to get the migration plan. Renovate will use `pg_dump` to retrieve the remote state from the database server, and then diff the AST between the local state and the remote state to find out the right migration plan. If you're satisfied with the migration plan, you can apply it to the database server via `renovate schema apply`.
 
 Below is an example:
 
@@ -28,9 +36,9 @@ Example:
 
 ```console,ignore
 ➜ renovate schema init postgres://localhost:5432/test
-➜ cat public/tables.sql
+➜ cat public/04_tables.sql
 CREATE TABLE public.todos (title text, completed boolean);⏎
-➜ cat > public/tables.sql
+➜ cat > public/04_tables.sql
 CREATE TABLE public.todos (title text, completed boolean, created_at timestamptz default now());
 ➜ renovate schema plan
 Table public.todos is changed:
@@ -165,3 +173,7 @@ A: Yes, you can include it as a dependency in your project. Please exclude `cli`
 Q: What is the plan or roadmap for Renovate?
 
 A: I don't have a roadmap now. I need to get as much feedback as possible from you. My priority, for now, is to make it stable and reliable. The project has a decent number of unit tests (57 unit tests + 1 CLI test) at the time of writing, but it still lacks coverage for many scenarios. I haven't produced any user guide yet, and it is important.
+
+## License
+
+Renovate is released under an MIT license. See [LICENSE](./LICENSE) for details.
