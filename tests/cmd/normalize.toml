@@ -1,4 +1,5 @@
 bin.name = "renovate"
+fs.cwd = "normalize.in"
 args = ["schema", "normalize", "--drop-on-exit"]
 stdout = ""
 stderr = ""

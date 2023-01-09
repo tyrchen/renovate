@@ -1,4 +1,5 @@
 bin.name = "renovate"
+fs.cwd = "plan.in"
 args = ["schema", "plan"]
 stdout = """
 The following SQLs will be applied:

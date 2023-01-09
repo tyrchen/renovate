@@ -1,5 +1,4 @@
 bin.name = "renovate"
-fs.cwd = "/tmp"
 fs.sandbox = true
 args = ["schema", "init", "postgres://postgres:postgres@localhost:5432/_test1234", "--drop-on-exit"]
 stdout = """
