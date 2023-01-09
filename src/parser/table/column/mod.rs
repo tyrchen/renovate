@@ -62,7 +62,7 @@ impl Column {
             self.id.schema_id, self.id.name, self.type_name
         );
         if !self.nullable {
-            sql.push_str(" NOT NULL");
+            sql.push_str(" NOT NULL ");
         }
         if let Some(default) = self.default.as_ref() {
             sql.push_str(default.generate_sql()?.as_str());

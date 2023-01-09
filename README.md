@@ -1,5 +1,7 @@
 # Renovate: A new way to handle SQL migration
 
+WARNING: This project still lacks of many features. It is not ready for production use. Feel free to try it for your local development and let me know what migration features you need. Please be noted some of the generated migrations are not safe to apply. If you have better ideas on how those migrations should be, please submit an issue.
+
 Renovate is a CLI tool to help you to work on Postgres SQL migration easily.
 
 Example:
@@ -26,3 +28,7 @@ The following SQLs will be applied:
 ```
 
 For more information, see the [initial thoughts](./rfcs/0001-sql-migration.md).
+
+Below is a simple demo:
+
+[![asciicast](https://asciinema.org/a/N7Pd3gDPGFcpCddREJKAKTtbx.svg)](https://asciinema.org/a/N7Pd3gDPGFcpCddREJKAKTtbx)
