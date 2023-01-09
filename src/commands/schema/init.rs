@@ -50,3 +50,17 @@ fn parse_url(s: &str) -> Result<Url, Error> {
     }
     Ok(url)
 }
+
+#[allow(dead_code)]
+async fn fetch_and_save(url: &Url) -> Result<()> {
+    let config = RenovateConfig::new(url.clone());
+    config.save("renovate.yml").await?;
+
+    let db_repo = DatabaseRepo::new(&config);
+    db_repo.init_local_database().await?;
+
+    db_repo.fetch().await?;
+
+    git_commit(format!("init schema migration repo for {}", url))?;
+    Ok(())
+}

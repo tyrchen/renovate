@@ -34,7 +34,12 @@ fn git_commit(_msg: impl AsRef<str>) -> Result<()> {
 
 #[cfg(not(feature = "cli-test"))]
 fn git_commit(msg: impl AsRef<str>) -> Result<()> {
-    let repo = crate::GitRepo::open(".")?;
+    use crate::GitRepo;
+    let repo = if std::path::Path::new(".git").exists() {
+        GitRepo::open(".")?
+    } else {
+        GitRepo::init(".")?
+    };
     if repo.is_dirty() {
         repo.commit(msg)?;
     }

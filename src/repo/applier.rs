@@ -32,11 +32,9 @@ impl DatabaseRepo {
 
     /// Apply the migration plan to the remote database server.
     pub async fn apply(&self, plan: Vec<String>, remote: bool) -> Result<()> {
-        // apply to local database
-        self.do_apply(&plan, &self.url).await?;
-
-        // if local is not equal to remote, apply to remote database if remote is true
-        if self.url != self.remote_url && remote {
+        if !remote {
+            self.do_apply(&plan, &self.url).await?;
+        } else if self.url != self.remote_url {
             self.do_apply(&plan, &self.remote_url).await?;
         }
         Ok(())
@@ -58,11 +56,11 @@ impl DatabaseRepo {
             Err(_) => {
                 let server_url = self.server_url()?;
                 let sql = if self.url != self.remote_url {
-                    self.load_sql_string(true).await.ok()
+                    self.load_sql_string(true).await?
                 } else {
-                    None
+                    "".to_owned()
                 };
-                init_database(&server_url, &self.db_name()?, &sql.unwrap_or_default()).await?;
+                init_database(&server_url, &self.db_name()?, &sql).await?;
 
                 Ok(())
             }

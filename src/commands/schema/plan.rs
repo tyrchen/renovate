@@ -1,5 +1,5 @@
 use super::{Args, CommandExecutor};
-use crate::{utils::load_config, DatabaseRepo, LocalRepo, SchemaLoader};
+use crate::{utils::load_config, DatabaseRepo, LocalRepo, SchemaLoader, SqlLoader};
 use clap_utils::{highlight_text, prelude::*};
 
 #[derive(Parser, Debug, Clone)]
@@ -8,17 +8,27 @@ pub struct SchemaPlanCommand {}
 #[async_trait]
 impl CommandExecutor for SchemaPlanCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
-        generate_plan().await?;
+        generate_plan(false).await?;
         Ok(())
     }
 }
 
-pub(super) async fn generate_plan() -> Result<Vec<String>> {
+pub(super) async fn generate_plan(remote: bool) -> Result<Vec<String>> {
     let config = load_config().await?;
     let db_repo = DatabaseRepo::new(&config);
-    let sql = LocalRepo::new(&config.output.path).load_sql().await?;
-    let local_schema = db_repo.normalize(&sql).await?;
-    let remote_schema = db_repo.load().await?;
+
+    let local_schema = if !remote {
+        let sql = LocalRepo::new(&config.output.path).load_sql().await?;
+        db_repo.normalize(&sql).await?
+    } else {
+        db_repo.load().await?
+    };
+    let remote_schema = if !remote {
+        db_repo.load().await?
+    } else {
+        let sql = db_repo.load_sql_string(remote).await?;
+        SqlLoader::new(&sql).load().await?
+    };
     let plan = local_schema.plan(&remote_schema, true)?;
 
     if plan.is_empty() {

@@ -14,14 +14,14 @@ pub struct SchemaApplyCommand {
 #[async_trait]
 impl CommandExecutor for SchemaApplyCommand {
     async fn execute(&self, _args: &Args) -> Result<(), Error> {
-        let plan = generate_plan().await?;
+        let plan = generate_plan(self.remote).await?;
         if plan.is_empty() {
             return Ok(());
         }
         let config = load_config().await?;
         let db_repo = DatabaseRepo::new(&config);
 
-        if git_dirty()? && !confirm("Your repo is dirty. Do you want to continue?") {
+        if git_dirty()? && !confirm("\nYour repo is dirty. Do you want to continue?") {
             bail!("Your repo is dirty. Please commit the changes before applying.");
         }
 
