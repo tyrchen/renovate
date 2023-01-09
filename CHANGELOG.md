@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.20] - 2023-01-09
+
+[84b01f3](84b01f363459bffa67e795be6349b5b136c5d46a)...[352b977](352b977f51dc9636a2c40218d53a7f4ee5b0e8c1)
+
+### Bug Fixes
+
+- Improve the commit message and shell output when applying the plan ([352b977](352b977f51dc9636a2c40218d53a7f4ee5b0e8c1) - 2023-01-09 by Tyr Chen)
+
 ## [0.2.19] - 2023-01-09
 
 [81ea378](81ea37862b5a4224a46a94e599d1d25621ba1f8b)...[84b01f3](84b01f363459bffa67e795be6349b5b136c5d46a)
