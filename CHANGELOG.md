@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.18] - 2023-01-09
+
+[5d33205](5d33205fa0add1e57e9dcd4e5bc8bf002f4270c6)...[81ea378](81ea37862b5a4224a46a94e599d1d25621ba1f8b)
+
+### Bug Fixes
+
+- Fix alter column not null missing space issue and also update readme ([81ea378](81ea37862b5a4224a46a94e599d1d25621ba1f8b) - 2023-01-09 by Tyr Chen)
+
+### Features
+
+- Support `renovate schema apply` to remote server and refactor git related code ([4839866](48398664df81227b647d43d2b12a3885b1a063b4) - 2023-01-08 by Tyr Chen)
+- Improve apply remote ([ff32b95](ff32b950ce005487f7f94ac87b8ec7808f36056d) - 2023-01-09 by Tyr Chen)
+
 ## [0.2.16] - 2023-01-08
 
 [c4fb19f](c4fb19f0d1aa0cdeaea199af5accbd3263b4f22f)...[5d33205](5d33205fa0add1e57e9dcd4e5bc8bf002f4270c6)
