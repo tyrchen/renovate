@@ -21,8 +21,8 @@ ALTER TABLE
 ADD
     CONSTRAINT todos_pkey PRIMARY KEY (id);
 ALTER TABLE
-    public.todos OWNER TO tchen;
+    public.todos OWNER TO postgres;
 ALTER TABLE
-    public.todos_id_seq OWNER TO tchen;
+    public.todos_id_seq OWNER TO postgres;
 """
 stderr = ""
