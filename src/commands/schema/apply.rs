@@ -21,16 +21,25 @@ impl CommandExecutor for SchemaApplyCommand {
         let config = load_config().await?;
         let db_repo = DatabaseRepo::new(&config);
 
-        if git_dirty()? && !confirm("\nYour repo is dirty. Do you want to continue?") {
-            bail!("Your repo is dirty. Please commit the changes before applying.");
+        if git_dirty()? {
+            if confirm("\nYour repo is dirty. Do you want to commit it first?") {
+                git_commit("automatically commit the schema changes before applying the plan")?;
+            } else {
+                bail!("Your repo is dirty. Please commit the changes before applying.");
+            }
         }
 
         if confirm("Do you want to perform this update?") {
             db_repo.apply(plan, self.remote).await?;
-            git_commit("automatically retrieved most recent schema from remote server")?;
+            git_commit("automatically commit the changes applied to remote server")?;
+            let url = if self.remote {
+                &config.url
+            } else {
+                &config.remote_url
+            };
             println!(
                 "Successfully applied migration to {}.\nYour repo is updated with the latest schema. See `git diff HEAD~1` for details.",
-                config.url
+                url
             );
         } else {
             println!("Database schema update has been cancelled.");
