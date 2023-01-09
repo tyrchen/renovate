@@ -1,7 +1,17 @@
 [package]
 name = "renovate"
-version = "0.2.18"
+version = "0.2.19"
 edition = "2021"
+license = "MIT"
+documentation = "https://docs.rs/renovate"
+repository = "https://github.com/tyrchen/renovate"
+homepage = "https://github.com/tyrchen/renovate"
+description = """
+A new way to handle Postgres schema migration.
+"""
+readme = "README.md"
+categories = ["database"]
+keywords = ["database", "postgres", "migration"]
 
 [lib]
 name = "renovate"

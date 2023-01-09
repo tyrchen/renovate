@@ -1,0 +1,3 @@
+# Renovate architecture
+
+TBD
