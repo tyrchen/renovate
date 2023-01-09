@@ -33,13 +33,13 @@ Renovate is inspired by [terraform](https://www.terraform.io/). It also tries to
 
 Under the hood, Renovate uses [pg_query](https://github.com/pganalyze/pg_query.rs) to parse the Postgres SQL DDL, and use [pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html) to retrieve the remote state. After a Renovate repo is created (by calling `renovate schema init`), it will keep track of the local state and the remote state. When you run `renovate schema plan`, it will retrieve the local state from the repo and the remote state via `pg_dump`, then parse both as AST using pg_query, and compare the two ASTs to generate the migration. The below figure shows the workflow of Renovate:
 
-![](docs/images/renovate.png)
+![arch](docs/images/renovate.png)
 
 For more information, see the [initial thoughts](./rfcs/0001-sql-migration.md). Or you can also check the [architecture](./docs/architecture.md).
 
 ## A simple demo
 
-[![asciicast](https://asciinema.org/a/N7Pd3gDPGFcpCddREJKAKTtbx.svg)](https://asciinema.org/a/N7Pd3gDPGFcpCddREJKAKTtbx)
+![demo](docs/images/demo.gif)
 
 ## Installation
 

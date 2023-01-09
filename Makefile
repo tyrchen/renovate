@@ -2,6 +2,9 @@ build:
 	@cargo build
 	@rm -f ~/.cargo/bin/renovate && cp ~/.target/debug/renovate ~/.cargo/bin/
 
+cov:
+	@cargo llvm-cov nextest --all-features --workspace --lcov --output-path coverage/lcov-$(shell date +%F).info
+
 test:
 	@cargo nextest run --all-features
 
