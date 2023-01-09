@@ -11,7 +11,7 @@ Example:
 ➜ cat public/tables.sql
 CREATE TABLE public.todos (title text, completed boolean);⏎
 ➜ cat > public/tables.sql
-CREATE TABLE public.todos (title text, completed boolean, created_at tstz default now());
+CREATE TABLE public.todos (title text, completed boolean, created_at timestamptz default now());
 ➜ renovate schema plan
 Table public.todos is changed:
 
@@ -19,12 +19,12 @@ Table public.todos is changed:
     1    |+CREATE TABLE public.todos (
     2    |+    title text,
     3    |+    completed boolean,
-    4    |+    created_at tstz DEFAULT NOW()
+    4    |+    created_at timestamptz DEFAULT NOW()
     5    |+)
 
 The following SQLs will be applied:
 
-  ALTER TABLE public.todos ADD COLUMN created_at tstz DEFAULT NOW();
+  ALTER TABLE public.todos ADD COLUMN created_at timestamptz DEFAULT NOW();
 ```
 
 ## How it works
