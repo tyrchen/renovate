@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.21] - 2023-01-09
 
-[352b977](352b977f51dc9636a2c40218d53a7f4ee5b0e8c1)...[951798f](951798fd772011c970aeefbbf62cf14c422915a9)
+[352b977](352b977f51dc9636a2c40218d53a7f4ee5b0e8c1)...[18dbbd1](18dbbd18d075a8e18ea99e906e5ace38ebd29e09)
 
 ### Bug Fixes
 
