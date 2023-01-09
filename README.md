@@ -1,8 +1,32 @@
 # Renovate: A new way to handle Postgres schema migration
 
-WARNING: This project still lacks many features. It is not ready for production use yet. Please be noted some of the generated migrations are not safe to apply at this moment. If you have better ideas on how those migrations should be, please submit an issue.
+Database schema designs will evolve over time as the products they support evolves. It is important to be able to migrate the schema in a safe and reliable manner to incorporate the product changes.
 
-Renovate is a CLI tool to help you to work on Postgres schema migration easily.
+Traditionally,  migration systems like ActiveRecord or sqlx will allow you to write migration files to describe what you want to execute to move the database from the current state to a new state. The system will track what migration files were applied by using a migration table like this:
+
+```sql
+CREATE TABLE public._sqlx_migrations (
+    version bigint NOT NULL PRIMARY KEY,
+    description text NOT NULL,
+    installed_on timestamp WITH time zone DEFAULT NOW() NOT NULL,
+    success boolean NOT NULL,
+    CHECKSUM bytea NOT NULL,
+    execution_time bigint NOT NULL
+);
+```
+
+This approach is reliable but it defers the burden of writing migration scripts to the developers. Sometimes the migration scripts are not easy to write, especially when the schema is complex. It is also hard to review the migration scripts since the reviewers need to understand what the current state is and what the new state it wants to achieve.
+
+Newer migration systems like [atlas](https://github.com/ariga/atlas) can *understand* database schemas and generate migrations for you. To achieve this, normally the system needs to know the local state that users want to transit to and the remote state that is currently running in the database. Once the system gathered both states, it could *diff* them to understand what changes are needed. This approach is widely used by the tools to manage cloud resources, for example, [terraform](https://www.terraform.io/). It is more convenient for developers, and tools like terraform proved their value.
+
+Renovate is a tool that falls into the second category. Unlike atlas, it doesn't use a new language (say HCL) to describe the local state. Instead, it uses the existing SQL DDL to describe the state. You could use `renovate schema init` to start a new project from an existing database. Renovate will retrieve the schema (if any) from the database server. And this will be your local state. You can do whatever modifications you'd like to do to it. Then you can use `renovate schema plan` to get the migration plan. Renovate will use `pg_dump` to retrieve the remote state from the database server, and then diff the AST between the local state and the remote state to find out the right migration plan.
+
+Then it can generate the migration scripts to move the database from the remote state to the local state. This approach is more convenient for developers, but it is not reliable. The system needs to understand the schema, and it is hard to make sure the system can understand all the possible schema changes. It is also hard to review the generated migration scripts since the reviewers need to understand what the system is trying to do.
+
+
+
+Below is an example:
+
 
 Example:
 
@@ -27,19 +51,19 @@ The following SQLs will be applied:
   ALTER TABLE public.todos ADD COLUMN created_at timestamptz DEFAULT NOW();
 ```
 
+If that inspires you, here's a more detailed demo:
+
+![demo](docs/images/demo.gif)
+
+WARNING: This project still lacks many features. It is not ready for production use yet. Please be noted some of the generated migrations (e.g. changing fields in composite type) are not safe to apply at this moment. If you have better ideas on how those migrations should be, please submit an issue.
+
 ## How it works
 
-Renovate is inspired by [terraform](https://www.terraform.io/). It also tries to generate migration declaratively, not imperatively. Terraform invented a new language to describe the resources, but Renovate decides to just use the existing SQL DDL to do so. It is a bit tricky to generate the migration from the SQL DDL, but it is much easier to understand and maintain.
-
-Under the hood, Renovate uses [pg_query](https://github.com/pganalyze/pg_query.rs) to parse the Postgres SQL DDL, and use [pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html) to retrieve the remote state. After a Renovate repo is created (by calling `renovate schema init`), it will keep track of the local state and the remote state. When you run `renovate schema plan`, it will retrieve the local state from the repo and the remote state via `pg_dump`, then parse both as AST using pg_query, and compare the two ASTs to generate the migration. The below figure shows the workflow of Renovate:
+Under the hood, Renovate uses [pg_query](https://github.com/pganalyze/pg_query.rs) to parse the Postgres SQL DDL to AST and uses [pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html) to retrieve the remote state from the database server. The below figure shows the workflow of Renovate:
 
 ![arch](docs/images/renovate.png)
 
 For more information, see the [initial thoughts](./rfcs/0001-sql-migration.md). Or you can also check the [architecture](./docs/architecture.md).
-
-## A simple demo
-
-![demo](docs/images/demo.gif)
 
 ## Installation
 
@@ -100,6 +124,10 @@ SUBCOMMANDS:
 - [x] Privilege add/remove/change
 
 ## FAQ
+
+Q: How to use Renovate to rollback my schema change?
+
+A: Unlike traditional schema migration tools, Renovate doesn't have a concept of "rollback". You could just change the schema back to the desired state (e.g. `git reset`), and then run `renovate schema plan` to get the migration plan as usual. Then you could apply the migration plan to the remote database server.
 
 Q: what if my change to the schema is not supported?
 

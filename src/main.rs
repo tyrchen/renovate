@@ -8,7 +8,7 @@ async fn main() -> Result<()> {
     action.execute(&args).await?;
 
     #[cfg(feature = "cli-test")]
-    {
+    if args.drop_on_exit {
         use renovate::{DatabaseRepo, RenovateConfig};
         let config = RenovateConfig::load("renovate.yml").await?;
         let repo = DatabaseRepo::new(&config);
