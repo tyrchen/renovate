@@ -102,10 +102,13 @@ SUBCOMMANDS:
 ## FAQ
 
 Q: what if my change to the schema is not supported?
+
 A: Please submit an issue to let us know. We will try to support it as soon as possible. Meanwhile, you could manually apply that change to the remote database, then run `renovate schema fetch` to update the local state.
 
 Q: Can I use Renovate as a library?
+
 A: Yes, you can include it as a dependency in your project. Please exclude `cli` feature if you just want to use the core. But it is not recommended to use it as a library at this moment. The API is not stable yet.
 
 Q: What is the plan or roadmap for Renovate?
+
 A: I don't have a roadmap now. I need to get as much feedback as possible from you. My priority, for now, is to make it stable and reliable. The project has a decent number of unit tests (57 unit tests + 1 CLI test) at the time of writing, but it still lacks coverage for many scenarios. I haven't produced any user guide yet, and it is important.
