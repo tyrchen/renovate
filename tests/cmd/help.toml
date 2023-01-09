@@ -3,7 +3,7 @@ args = ["help"]
 status.code = 0
 stdout = """
 renovate [..]
-Renovate database migration tool
+A new way to handle Postgres schema migration.
 
 USAGE:
     renovate [OPTIONS] <SUBCOMMAND>
