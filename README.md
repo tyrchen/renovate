@@ -29,8 +29,14 @@ Newer migration systems like [atlas](https://github.com/ariga/atlas) can *unders
 
 Renovate is a tool that falls into the second category. Unlike atlas, it doesn't use a new language (say HCL) to describe the local state. Instead, it uses the existing SQL DDL to describe the schema state. You could use `renovate schema init` to start a new project from an existing database. Renovate will retrieve the schema (if any) from the database server and properly organize the SQLs in different folders in a newly created git repo. And this will be your local state. You can do whatever modifications you'd like to do to it. Once you're satisfied with the schema, you can use `renovate schema plan` to get the migration plan. Renovate will use `pg_dump` to retrieve the remote state from the database server, and then diff the AST between the local state and the remote state to find out the right migration plan. If you're satisfied with the migration plan, you can apply it to the database server via `renovate schema apply`.
 
-Below is an example:
+The benefit of using Renovate:
 
+1. Declarative schema definition.
+2. Just use SQL DDL. You don't need to learn a new language.
+3. Renovate doesn't limit you when you introduce the tool. You can use it to start a new database project, or you can use it to migrate an existing database project. You don't need to start from scratch. You don't need to do any hacks for the existing database.
+4. Renovate won't limit you on what tool you use. Feel free to use other tools or approaches to migrate database schema while you're using Renovate. You just need to do a simple `renovate schema fetch` to update the local state whenever you updated the database schema outside Renovate. Then you're good to go. No hacks are needed.
+
+Below is an example:
 
 Example:
 
