@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.22] - 2023-01-10
+
+[18dbbd1](18dbbd18d075a8e18ea99e906e5ace38ebd29e09)...[7b8d729](7b8d729e0255905e785a711837b48896e5c4103d)
+
+### Bug Fixes
+
+- Alter table level constraint should only drop/create that constraint. Also use ONLY for most of alter table migration. ([7b8d729](7b8d729e0255905e785a711837b48896e5c4103d) - 2023-01-10 by Tyr Chen)
+
 ## [0.2.21] - 2023-01-09
 
 [352b977](352b977f51dc9636a2c40218d53a7f4ee5b0e8c1)...[18dbbd1](18dbbd18d075a8e18ea99e906e5ace38ebd29e09)
