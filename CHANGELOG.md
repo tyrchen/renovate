@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.23] - 2023-01-10
+
+[7b8d729](7b8d729e0255905e785a711837b48896e5c4103d)...[2ae8ada](2ae8adafcf18e5fa4a2bd06cfc4f3cedb2b9b501)
+
+### Features
+
+- Add rename to DeltaItem trait and support rename for column/constraints of the table ([07a00b8](07a00b85652b5080efbcc4f8054a8a512402110a) - 2023-01-10 by Tyr Chen)
+
 ## [0.2.22] - 2023-01-10
 
 [18dbbd1](18dbbd18d075a8e18ea99e906e5ace38ebd29e09)...[7b8d729](7b8d729e0255905e785a711837b48896e5c4103d)
