@@ -35,18 +35,23 @@ impl ConstraintInfo {
 impl DeltaItem for ConstraintInfo {
     type SqlNode = Table;
     fn drop(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
-        let sql = format!("ALTER TABLE {} DROP CONSTRAINT {}", item.id, self.name);
+        let sql = format!("ALTER TABLE ONLY {} DROP CONSTRAINT {}", item.id, self.name);
 
         Ok(vec![sql])
     }
 
     fn create(self, item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
-        let sql = format!("ALTER TABLE {} ADD {}", item.id, self.generate_sql()?);
+        let sql = format!("ALTER TABLE ONLY {} ADD {}", item.id, self.generate_sql()?);
         Ok(vec![sql])
     }
 
-    fn alter(self, _item: &Self::SqlNode, _new: Self) -> anyhow::Result<Vec<String>> {
-        Ok(vec![])
+    fn alter(self, item: &Self::SqlNode, new: Self) -> anyhow::Result<Vec<String>> {
+        let mut migrations = vec![];
+        let sql = self.drop(item)?;
+        migrations.extend(sql);
+        let sql = new.create(item)?;
+        migrations.extend(sql);
+        Ok(migrations)
     }
 }
 

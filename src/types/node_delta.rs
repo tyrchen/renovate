@@ -1,9 +1,12 @@
 use crate::{DeltaItem, NodeDelta};
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt,
+};
 
 impl<T, Item> NodeDelta<T>
 where
-    T: Clone + Ord + DeltaItem<SqlNode = Item>,
+    T: Clone + Ord + DeltaItem<SqlNode = Item> + fmt::Debug,
 {
     pub fn create(old: BTreeMap<&String, &T>, new: BTreeMap<&String, &T>) -> NodeDelta<T> {
         let mut delta = NodeDelta::default();

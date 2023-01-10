@@ -58,7 +58,7 @@ impl TryFrom<(SchemaId, ColumnDef)> for Column {
 impl Column {
     pub(super) fn generate_add_sql(self) -> anyhow::Result<String> {
         let mut sql = format!(
-            "ALTER TABLE {} ADD COLUMN {} {}",
+            "ALTER TABLE ONLY {} ADD COLUMN {} {}",
             self.id.schema_id, self.id.name, self.type_name
         );
         if !self.nullable {
@@ -209,6 +209,9 @@ mod tests {
         let diff = old.diff(&new).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 1);
-        assert_eq!(plan[0], "ALTER TABLE public.foo ADD COLUMN tags text[]");
+        assert_eq!(
+            plan[0],
+            "ALTER TABLE ONLY public.foo ADD COLUMN tags text[]"
+        );
     }
 }

@@ -181,10 +181,10 @@ mod tests {
         let diff = old.diff(&new).unwrap().unwrap();
         let plan = diff.plan().unwrap();
         assert_eq!(plan.len(), 2);
-        assert_eq!(plan[0], "ALTER TABLE public.foo ADD COLUMN email text");
+        assert_eq!(plan[0], "ALTER TABLE ONLY public.foo ADD COLUMN email text");
         assert_eq!(
             plan[1],
-            "ALTER TABLE public.foo ADD CONSTRAINT c1 CHECK (check_name(name))"
+            "ALTER TABLE ONLY public.foo ADD CONSTRAINT c1 CHECK (check_name(name))"
         );
     }
 
@@ -196,5 +196,25 @@ mod tests {
         let new: Table = s2.parse().unwrap();
         let diff = old.diff(&new).unwrap();
         assert!(diff.is_none());
+    }
+
+    #[test]
+    fn table_level_constraint_should_generate_correct_migration() {
+        let s1 = "CREATE TABLE users (
+            name TEXT NOT NULL, constraint c1 CHECK (length(name) > 4)
+        )";
+        let s2 = "CREATE TABLE users (
+            name TEXT NOT NULL, constraint c1 CHECK (length(name) > 5)
+        )";
+        let old: Table = s1.parse().unwrap();
+        let new: Table = s2.parse().unwrap();
+        let diff = Differ::diff(&old, &new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 2);
+        assert_eq!(plan[0], "ALTER TABLE ONLY public.users DROP CONSTRAINT c1");
+        assert_eq!(
+            plan[1],
+            "ALTER TABLE ONLY public.users ADD CONSTRAINT c1 CHECK (length(name) > 5)"
+        );
     }
 }

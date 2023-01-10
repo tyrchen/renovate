@@ -352,7 +352,7 @@ mod tests {
         assert_eq!(migrations.len(), 4);
         assert_eq!(
             migrations[0],
-            "ALTER TABLE public.test_table ADD COLUMN created_at timestamptz"
+            "ALTER TABLE ONLY public.test_table ADD COLUMN created_at timestamptz"
         );
         assert_eq!(migrations[1], "DROP VIEW public.test_view");
         assert_eq!(

@@ -1,6 +1,6 @@
 [package]
 name = "renovate"
-version = "0.2.21"
+version = "0.2.22"
 edition = "2021"
 license = "MIT"
 documentation = "https://docs.rs/renovate"
