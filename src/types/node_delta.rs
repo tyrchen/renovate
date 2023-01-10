@@ -28,7 +28,7 @@ where
         for key in might_changed {
             let old_priv = old[*key];
             let new_priv = new[*key];
-            if old_priv != new_priv {
+            if old_priv.to_string() != new_priv.to_string() {
                 delta.changed.insert((old_priv.clone(), new_priv.clone()));
             }
         }
@@ -38,14 +38,29 @@ where
 
     pub fn plan(self, item: &Item) -> anyhow::Result<Vec<String>> {
         let mut migrations = Vec::new();
-        for removed in self.removed {
-            let sqls = removed.drop(item)?;
-            migrations.extend(sqls);
+
+        let mut is_rename = false;
+        // check if it is a case for rename
+        if self.added.len() == 1 && self.removed.len() == 1 {
+            let added = self.added.iter().next().unwrap();
+            let removed = self.removed.iter().next().unwrap();
+            let result = removed.to_owned().rename(item, added.to_owned())?;
+            if !result.is_empty() {
+                migrations.extend(result);
+                is_rename = true;
+            }
         }
 
-        for added in self.added {
-            let sqls = added.create(item)?;
-            migrations.extend(sqls);
+        if !is_rename {
+            for removed in self.removed {
+                let sqls = removed.drop(item)?;
+                migrations.extend(sqls);
+            }
+
+            for added in self.added {
+                let sqls = added.create(item)?;
+                migrations.extend(sqls);
+            }
         }
 
         for (v1, v2) in self.changed {

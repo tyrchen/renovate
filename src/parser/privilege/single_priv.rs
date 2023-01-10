@@ -3,8 +3,9 @@ use crate::{
     parser::{utils::parsec::parse_single_priv, Privilege},
     DeltaItem, NodeItem,
 };
+use itertools::Itertools;
 use pg_query::{protobuf::AccessPriv, Node, NodeEnum};
-use std::{collections::BTreeSet, str::FromStr};
+use std::{collections::BTreeSet, fmt, str::FromStr};
 
 impl FromStr for SinglePriv {
     type Err = anyhow::Error;
@@ -52,6 +53,10 @@ impl DeltaItem for SinglePriv {
         Ok(vec![node.deparse()?])
     }
 
+    fn rename(self, _item: &Self::SqlNode, _new: Self) -> anyhow::Result<Vec<String>> {
+        Ok(vec![])
+    }
+
     fn alter(self, item: &Self::SqlNode, new: Self) -> anyhow::Result<Vec<String>> {
         let mut migrations = vec![];
         let sql = self.drop(item)?;
@@ -84,5 +89,15 @@ impl From<AccessPriv> for SinglePriv {
             })
             .collect();
         Self { name, cols }
+    }
+}
+
+impl fmt::Display for SinglePriv {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)?;
+        if !self.cols.is_empty() {
+            write!(f, "({})", self.cols.iter().join(", "))?;
+        }
+        Ok(())
     }
 }
