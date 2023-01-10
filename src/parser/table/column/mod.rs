@@ -11,7 +11,7 @@ use pg_query::{
     protobuf::{ColumnDef, ConstrType},
     NodeEnum,
 };
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, fmt};
 
 impl TryFrom<(SchemaId, ColumnDef)> for Column {
     type Error = anyhow::Error;
@@ -57,20 +57,12 @@ impl TryFrom<(SchemaId, ColumnDef)> for Column {
 
 impl Column {
     pub(super) fn generate_add_sql(self) -> anyhow::Result<String> {
-        let mut sql = format!(
-            "ALTER TABLE ONLY {} ADD COLUMN {} {}",
-            self.id.schema_id, self.id.name, self.type_name
-        );
-        if !self.nullable {
-            sql.push_str(" NOT NULL ");
-        }
-        if let Some(default) = self.default.as_ref() {
-            sql.push_str(default.generate_sql()?.as_str());
-        }
-        for constraint in self.constraints {
-            sql.push_str(&constraint.generate_sql()?);
-        }
+        let sql = format!("ALTER TABLE ONLY {} ADD COLUMN {}", self.id.schema_id, self);
         Ok(sql)
+    }
+
+    fn default_str(&self) -> Option<String> {
+        self.default.as_ref().map(|v| v.to_string())
     }
 }
 
@@ -85,6 +77,20 @@ impl DeltaItem for Column {
     fn create(self, _item: &Self::SqlNode) -> anyhow::Result<Vec<String>> {
         let sql = self.generate_add_sql()?;
         Ok(vec![sql])
+    }
+
+    fn rename(self, item: &Self::SqlNode, new: Self) -> anyhow::Result<Vec<String>> {
+        if self.type_name == new.type_name
+            && self.nullable == new.nullable
+            && self.default == new.default
+            && self.constraints == new.constraints
+        {
+            return Ok(vec![format!(
+                "ALTER TABLE ONLY {} RENAME COLUMN {} TO {}",
+                item.id, self.id.name, new.id.name
+            )]);
+        }
+        Ok(vec![])
     }
 
     fn alter(self, item: &Self::SqlNode, new: Self) -> anyhow::Result<Vec<String>> {
@@ -117,7 +123,7 @@ impl DeltaItem for Column {
                 "ALTER COLUMN {} {}",
                 new.id.name,
                 if let Some(v) = new.default {
-                    format!("SET {}", v.generate_sql()?)
+                    format!("SET {}", v)
                 } else {
                     "DROP DEFAULT".to_string()
                 }
@@ -131,6 +137,23 @@ impl DeltaItem for Column {
         }
 
         Ok(migrations)
+    }
+}
+
+impl fmt::Display for Column {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut fragments = vec![self.id.name.clone(), self.type_name.clone()];
+        if !self.nullable {
+            fragments.push("NOT NULL".to_owned());
+        }
+        if let Some(default) = self.default_str() {
+            fragments.push(default);
+        }
+        for constraint in &self.constraints {
+            fragments.push(constraint.to_string());
+        }
+
+        write!(f, "{}", fragments.join(" "))
     }
 }
 
@@ -212,6 +235,46 @@ mod tests {
         assert_eq!(
             plan[0],
             "ALTER TABLE ONLY public.foo ADD COLUMN tags text[]"
+        );
+    }
+
+    #[test]
+    fn simple_table_rename_column_should_work() {
+        let s1 = "CREATE TABLE foo (name varchar(256))";
+        let s2 = "CREATE TABLE foo (name1 varchar(256))";
+        let old: Table = s1.parse().unwrap();
+        let new: Table = s2.parse().unwrap();
+        let diff = old.diff(&new).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(
+            plan[0],
+            "ALTER TABLE ONLY public.foo RENAME COLUMN name TO name1"
+        );
+    }
+
+    #[test]
+    fn table_rename_column_should_work() {
+        let s1 = "CREATE TABLE public.todos (
+            title text NOT NULL,
+            completed boolean,
+            id bigint DEFAULT nextval('public.todos_id_seq'::regclass) NOT NULL,
+            CONSTRAINT todos_title_check1 CHECK (length(title) > 5)
+        )";
+        let s2 = "CREATE TABLE public.todos (
+            title text NOT NULL,
+            completed1 boolean,
+            id bigint DEFAULT nextval('public.todos_id_seq'::regclass) NOT NULL,
+            CONSTRAINT todos_title_check1 CHECK (length(title) > 5)
+        )";
+        let t1: Table = s1.parse().unwrap();
+        let t2: Table = s2.parse().unwrap();
+        let diff = t1.diff(&t2).unwrap().unwrap();
+        let plan = diff.plan().unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(
+            plan[0],
+            "ALTER TABLE ONLY public.todos RENAME COLUMN completed TO completed1"
         );
     }
 }

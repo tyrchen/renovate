@@ -103,13 +103,15 @@ pub trait MigrationPlanner {
 }
 
 /// A trait for the diff object to generate proper migration sql
-pub trait DeltaItem {
+pub trait DeltaItem: ToString {
     /// The node which will be used to generated the final SQL
     type SqlNode: NodeItem;
     /// generate sql for drop
     fn drop(self, node: &Self::SqlNode) -> Result<Vec<String>>;
     /// generate sql for create
     fn create(self, node: &Self::SqlNode) -> Result<Vec<String>>;
+    /// generate rename SQL
+    fn rename(self, node: &Self::SqlNode, new: Self) -> Result<Vec<String>>;
     /// generate sql for alter
     fn alter(self, node: &Self::SqlNode, new: Self) -> Result<Vec<String>>;
 }
